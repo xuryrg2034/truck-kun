@@ -14,6 +14,34 @@
 3) В `Update` каждый кадр идут `Execute()` и `Cleanup()`.
 4) В `OnDestroy` — `TearDown()` и `Dispose()` для input.
 
+## Схема связей (текстовая)
+```
+EcsBootstrap
+  ├─ DiContainer
+  │   ├─ Contexts (game/input/meta)
+  │   ├─ IInputService -> InputSystemService (InputActionAsset)
+  │   ├─ IIdentifierService -> IdentifierService
+  │   ├─ ITimeService -> UnityTimeService
+  │   ├─ IHeroSpawnPoint -> HeroSpawnPoint (Transform + Hero prefab)
+  │   ├─ IHeroFactory -> HeroFactory
+  │   ├─ IEntityViewFactory -> EntityViewFactory (IInstantiator)
+  │   └─ ISystemFactory -> SystemFactory
+  └─ BattleFeature
+      ├─ InputFeature
+      │   ├─ InitializeInputSystem
+      │   ├─ EmitInputSystem  -> InputEntity{MoveInput}
+      │   └─ CleanupInputSystem -> destroy InputEntities
+      ├─ HeroFeature
+      │   ├─ InitializeHeroSystem -> GameEntity{Hero, Id, WorldPosition, MoveDirection, MoveSpeed, ViewPrefab?}
+      │   └─ SetHeroDirectionByInputSystem (MoveInput -> MoveDirection)
+      ├─ BindViewFeature
+      │   └─ BindEntityViewFromPrefabSystem -> EntityBehaviour (adds View + TransformComponent)
+      └─ MovementFeature
+          ├─ DirectionalDeltaMoveSystem (MoveDirection + MoveSpeed -> WorldPosition)
+          ├─ RotateAlongDirectionSystem (MoveDirection -> Transform.rotation)
+          └─ UpdateTransformPositionSystem (WorldPosition -> Transform.position)
+```
+
 ## Контексты и сущности
 Game‑контекст:
 - `Id` (также Meta, primary index)
