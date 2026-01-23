@@ -6,6 +6,7 @@ using Code.Infrastructure.Systems;
 using Code.Infrastructure.View;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 using Zenject;
 
 namespace Code.Infrastructure
@@ -16,10 +17,14 @@ namespace Code.Infrastructure
     [SerializeField] private Transform _heroSpawn;
     [SerializeField] private EntityBehaviour _heroViewPrefab;
     [SerializeField] private RunnerMovementSettings _runnerMovement = new RunnerMovementSettings();
+    [SerializeField] private DaySessionSettings _daySessionSettings = new DaySessionSettings();
 
     private DiContainer _container;
     private BattleFeature _battleFeature;
     private IInputService _inputService;
+    private IDaySessionService _daySessionService;
+    private bool _dayFinishedHandled;
+    private GameObject _dayFinishedOverlay;
 
     private void Awake()
     {
@@ -41,6 +46,11 @@ namespace Code.Infrastructure
       ISystemFactory systems = _container.Resolve<ISystemFactory>();
       _battleFeature = systems.Create<BattleFeature>();
       _battleFeature.Initialize();
+
+      _daySessionService = _container.Resolve<IDaySessionService>();
+      _daySessionService.StartDay();
+      if (_daySessionService.State == DayState.Finished)
+        HandleDayFinished();
     }
 
     private void BindContexts(Contexts contexts)
@@ -64,6 +74,12 @@ namespace Code.Infrastructure
 
       _container.BindInstance(_runnerMovement).AsSingle();
 
+      if (_daySessionSettings == null)
+        _daySessionSettings = new DaySessionSettings();
+
+      _container.BindInstance(_daySessionSettings).AsSingle();
+      _container.Bind<IDaySessionService>().To<DaySessionService>().AsSingle();
+
       Vector3 spawnPosition = _heroSpawn != null ? _heroSpawn.position : Vector3.zero;
       _container.Bind<IHeroSpawnPoint>().To<HeroSpawnPoint>().AsSingle()
         .WithArguments(spawnPosition, _heroViewPrefab);
@@ -77,8 +93,20 @@ namespace Code.Infrastructure
 
     private void Update()
     {
-      if (_battleFeature == null)
+      if (_battleFeature == null || _daySessionService == null)
         return;
+
+      if (_daySessionService.State == DayState.Finished)
+      {
+        HandleDayFinished();
+        return;
+      }
+
+      if (_daySessionService.Tick())
+      {
+        HandleDayFinished();
+        return;
+      }
 
       _battleFeature.Execute();
       _battleFeature.Cleanup();
@@ -94,6 +122,65 @@ namespace Code.Infrastructure
 
       (_inputService as System.IDisposable)?.Dispose();
       _inputService = null;
+    }
+
+    private void HandleDayFinished()
+    {
+      if (_dayFinishedHandled)
+        return;
+
+      _dayFinishedHandled = true;
+
+      EnsureDayFinishedOverlay();
+    }
+
+    private void EnsureDayFinishedOverlay()
+    {
+      if (_dayFinishedOverlay != null)
+        return;
+
+      GameObject overlayRoot = new GameObject("DayFinishedOverlay");
+      overlayRoot.transform.SetParent(transform, false);
+
+      Canvas canvas = overlayRoot.AddComponent<Canvas>();
+      canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+      canvas.sortingOrder = short.MaxValue;
+
+      CanvasScaler scaler = overlayRoot.AddComponent<CanvasScaler>();
+      scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+      scaler.referenceResolution = new Vector2(1920f, 1080f);
+      scaler.matchWidthOrHeight = 0.5f;
+
+      overlayRoot.AddComponent<GraphicRaycaster>();
+
+      GameObject panel = new GameObject("Panel");
+      panel.transform.SetParent(overlayRoot.transform, false);
+      Image panelImage = panel.AddComponent<Image>();
+      panelImage.color = new Color(0f, 0f, 0f, 0.6f);
+
+      RectTransform panelRect = panel.GetComponent<RectTransform>();
+      panelRect.anchorMin = Vector2.zero;
+      panelRect.anchorMax = Vector2.one;
+      panelRect.offsetMin = Vector2.zero;
+      panelRect.offsetMax = Vector2.zero;
+
+      GameObject label = new GameObject("Label");
+      label.transform.SetParent(panel.transform, false);
+      Text text = label.AddComponent<Text>();
+      text.text = "DAY FINISHED";
+      text.alignment = TextAnchor.MiddleCenter;
+      text.fontSize = 64;
+      text.color = Color.white;
+      text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+      text.raycastTarget = false;
+
+      RectTransform labelRect = label.GetComponent<RectTransform>();
+      labelRect.anchorMin = new Vector2(0.5f, 0.5f);
+      labelRect.anchorMax = new Vector2(0.5f, 0.5f);
+      labelRect.sizeDelta = new Vector2(800f, 200f);
+      labelRect.anchoredPosition = Vector2.zero;
+
+      _dayFinishedOverlay = overlayRoot;
     }
   }
 }
