@@ -383,6 +383,63 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
+--- !u!1001 &738693659
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 720000, guid: 0f7a4c1d2e3b4a5c9d8e1f2a3b4c5d6e, type: 3}
+      propertyPath: m_Name
+      value: Road
+      objectReference: {fileID: 0}
+    - target: {fileID: 720001, guid: 0f7a4c1d2e3b4a5c9d8e1f2a3b4c5d6e, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 1.8145485
+      objectReference: {fileID: 0}
+    - target: {fileID: 720001, guid: 0f7a4c1d2e3b4a5c9d8e1f2a3b4c5d6e, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 720001, guid: 0f7a4c1d2e3b4a5c9d8e1f2a3b4c5d6e, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -20.180489
+      objectReference: {fileID: 0}
+    - target: {fileID: 720001, guid: 0f7a4c1d2e3b4a5c9d8e1f2a3b4c5d6e, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 720001, guid: 0f7a4c1d2e3b4a5c9d8e1f2a3b4c5d6e, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 720001, guid: 0f7a4c1d2e3b4a5c9d8e1f2a3b4c5d6e, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 720001, guid: 0f7a4c1d2e3b4a5c9d8e1f2a3b4c5d6e, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 720001, guid: 0f7a4c1d2e3b4a5c9d8e1f2a3b4c5d6e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 720001, guid: 0f7a4c1d2e3b4a5c9d8e1f2a3b4c5d6e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 720001, guid: 0f7a4c1d2e3b4a5c9d8e1f2a3b4c5d6e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 0f7a4c1d2e3b4a5c9d8e1f2a3b4c5d6e, type: 3}
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -479,6 +536,10 @@ MonoBehaviour:
   _inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   _heroSpawn: {fileID: 1614511770}
   _heroViewPrefab: {fileID: 710005, guid: 7c4d1e2f3a5b6c7d8e9f0a1b2c3d4e5f, type: 3}
+  _runnerMovement:
+    ForwardSpeed: 5
+    LateralSpeed: 5
+    RoadWidth: 6
 --- !u!4 &1614511770 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 720001, guid: 8d5e2f3a4b6c7d8e9f0a1b2c3d4e5f60, type: 3}
@@ -550,3 +611,4 @@ SceneRoots:
   - {fileID: 832575519}
   - {fileID: 1000000002}
   - {fileID: 1711561349}
+  - {fileID: 738693659}

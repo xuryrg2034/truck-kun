@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using Code.Common;
-using Code.Gameplay.Features.Movement;
 using Code.Infrastructure.Systems;
 using Code.Infrastructure.View;
 using Entitas;
@@ -10,6 +9,14 @@ using UnityEngine;
 namespace Code.Gameplay.Features.Hero
 {
   [Game] public class Hero : IComponent { }
+
+  [System.Serializable]
+  public class RunnerMovementSettings
+  {
+    public float ForwardSpeed = 5f;
+    public float LateralSpeed = 5f;
+    public float RoadWidth = 6f;
+  }
 
   public interface IHeroSpawnPoint
   {
@@ -36,7 +43,6 @@ namespace Code.Gameplay.Features.Hero
 
   public class HeroFactory : IHeroFactory
   {
-    private const float DefaultMoveSpeed = 5f;
     private readonly IHeroSpawnPoint _spawn;
     private readonly IIdentifierService _identifiers;
 
@@ -52,8 +58,6 @@ namespace Code.Gameplay.Features.Hero
       entity.isHero = true;
       entity.AddId(_identifiers.Next());
       entity.AddWorldPosition(_spawn.Position);
-      entity.AddMoveDirection(Vector3.zero);
-      entity.AddMoveSpeed(DefaultMoveSpeed);
 
       if (_spawn.ViewPrefab != null)
         entity.AddViewPrefab(_spawn.ViewPrefab);
@@ -67,7 +71,7 @@ namespace Code.Gameplay.Features.Hero
     public HeroFeature(ISystemFactory systems)
     {
       Add(systems.Create<InitializeHeroSystem>());
-      Add(systems.Create<SetHeroDirectionByInputSystem>());
+      Add(systems.Create<RunnerHeroMoveSystem>());
     }
   }
 
@@ -91,33 +95,56 @@ namespace Code.Gameplay.Features.Hero
     }
   }
 
-  public class SetHeroDirectionByInputSystem : IExecuteSystem
+  public class RunnerHeroMoveSystem : IExecuteSystem
   {
+    private readonly ITimeService _time;
+    private readonly RunnerMovementSettings _settings;
+    private readonly IHeroSpawnPoint _spawnPoint;
     private readonly IGroup<InputEntity> _inputs;
     private readonly IGroup<GameEntity> _heroes;
     private readonly List<InputEntity> _inputBuffer = new(1);
     private readonly List<GameEntity> _heroBuffer = new(16);
 
-    public SetHeroDirectionByInputSystem(GameContext game, InputContext input)
+    public RunnerHeroMoveSystem(
+      GameContext game,
+      InputContext input,
+      ITimeService time,
+      RunnerMovementSettings settings,
+      IHeroSpawnPoint spawnPoint)
     {
+      _time = time;
+      _settings = settings;
+      _spawnPoint = spawnPoint;
       _inputs = input.GetGroup(InputMatcher.AllOf(InputMatcher.MoveInput));
       _heroes = game.GetGroup(GameMatcher.AllOf(
         GameMatcher.Hero,
-        GameMatcher.MoveDirection));
+        GameMatcher.WorldPosition));
     }
 
     public void Execute()
     {
-      Vector2 move = Vector2.zero;
+      float lateralInput = 0f;
       foreach (InputEntity inputEntity in _inputs.GetEntities(_inputBuffer))
-        move = inputEntity.moveInput.Value;
+        lateralInput = inputEntity.moveInput.Value.x;
 
-      Vector3 direction = new Vector3(move.x, 0f, move.y);
-      if (direction.sqrMagnitude > 1f)
-        direction.Normalize();
+      lateralInput = Mathf.Clamp(lateralInput, -1f, 1f);
+
+      float forwardSpeed = Mathf.Max(0f, _settings.ForwardSpeed);
+      float lateralSpeed = _settings.LateralSpeed;
+      float halfWidth = Mathf.Max(0f, _settings.RoadWidth * 0.5f);
+      float centerX = _spawnPoint != null ? _spawnPoint.Position.x : 0f;
+      float minX = centerX - halfWidth;
+      float maxX = centerX + halfWidth;
+
+      Vector3 forwardDelta = Vector3.forward * forwardSpeed * _time.DeltaTime;
+      Vector3 lateralDelta = Vector3.right * lateralInput * lateralSpeed * _time.DeltaTime;
 
       foreach (GameEntity hero in _heroes.GetEntities(_heroBuffer))
-        hero.ReplaceMoveDirection(direction);
+      {
+        Vector3 next = hero.worldPosition.Value + forwardDelta + lateralDelta;
+        next.x = Mathf.Clamp(next.x, minX, maxX);
+        hero.ReplaceWorldPosition(next);
+      }
     }
   }
 }

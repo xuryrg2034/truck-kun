@@ -15,6 +15,7 @@ namespace Code.Infrastructure
     [SerializeField] private InputActionAsset _inputActions;
     [SerializeField] private Transform _heroSpawn;
     [SerializeField] private EntityBehaviour _heroViewPrefab;
+    [SerializeField] private RunnerMovementSettings _runnerMovement = new RunnerMovementSettings();
 
     private DiContainer _container;
     private BattleFeature _battleFeature;
@@ -57,6 +58,11 @@ namespace Code.Infrastructure
 
       _container.Bind<IIdentifierService>().To<IdentifierService>().AsSingle();
       _container.Bind<ITimeService>().To<UnityTimeService>().AsSingle();
+
+      if (_runnerMovement == null)
+        _runnerMovement = new RunnerMovementSettings();
+
+      _container.BindInstance(_runnerMovement).AsSingle();
 
       Vector3 spawnPosition = _heroSpawn != null ? _heroSpawn.position : Vector3.zero;
       _container.Bind<IHeroSpawnPoint>().To<HeroSpawnPoint>().AsSingle()
