@@ -557,7 +557,7 @@ MonoBehaviour:
     LateralSpeed: 5
     RoadWidth: 6
   _daySessionSettings:
-    DurationSeconds: 10
+    DurationSeconds: 60
   _pedestrianSpawnSettings:
     TargetPrefab: {fileID: 730005, guid: a1b2c3d4e5f60718293a4b5c6d7e8f90, type: 3}
     ForbiddenPrefab: {fileID: 740005, guid: b2c3d4e5f60718293a4b5c6d7e8f9012, type: 3}
@@ -569,6 +569,8 @@ MonoBehaviour:
     CrossingChance: 0.5
     CrossingSpeed: 1.5
     RoadCenterOffset: 0
+  _collisionSettings:
+    HitRadius: 1.2
 --- !u!4 &1614511770 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 720001, guid: 8d5e2f3a4b6c7d8e9f0a1b2c3d4e5f60, type: 3}

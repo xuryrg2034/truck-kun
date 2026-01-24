@@ -13,13 +13,15 @@ public static class GameComponentsLookup {
     public const int View = 2;
     public const int ViewPrefab = 3;
     public const int WorldPosition = 4;
-    public const int Hero = 5;
-    public const int MoveDirection = 6;
-    public const int MoveSpeed = 7;
-    public const int Pedestrian = 8;
-    public const int PedestrianType = 9;
+    public const int Hit = 5;
+    public const int HitEvent = 6;
+    public const int Hero = 7;
+    public const int MoveDirection = 8;
+    public const int MoveSpeed = 9;
+    public const int Pedestrian = 10;
+    public const int PedestrianType = 11;
 
-    public const int TotalComponents = 10;
+    public const int TotalComponents = 12;
 
     public static readonly string[] componentNames = {
         "Id",
@@ -27,6 +29,8 @@ public static class GameComponentsLookup {
         "View",
         "ViewPrefab",
         "WorldPosition",
+        "Hit",
+        "HitEvent",
         "Hero",
         "MoveDirection",
         "MoveSpeed",
@@ -40,6 +44,8 @@ public static class GameComponentsLookup {
         typeof(Code.Common.View),
         typeof(Code.Common.ViewPrefab),
         typeof(Code.Common.WorldPosition),
+        typeof(Code.Gameplay.Features.Collision.Hit),
+        typeof(Code.Gameplay.Features.Collision.HitEvent),
         typeof(Code.Gameplay.Features.Hero.Hero),
         typeof(Code.Gameplay.Features.Movement.MoveDirection),
         typeof(Code.Gameplay.Features.Movement.MoveSpeed),

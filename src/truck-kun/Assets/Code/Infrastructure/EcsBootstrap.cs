@@ -1,5 +1,6 @@
 using Code.Common;
 using Code.Gameplay;
+using Code.Gameplay.Features.Collision;
 using Code.Gameplay.Features.Hero;
 using Code.Gameplay.Features.Pedestrian;
 using Code.Gameplay.Input;
@@ -20,6 +21,7 @@ namespace Code.Infrastructure
     [SerializeField] private RunnerMovementSettings _runnerMovement = new RunnerMovementSettings();
     [SerializeField] private DaySessionSettings _daySessionSettings = new DaySessionSettings();
     [SerializeField] private PedestrianSpawnSettings _pedestrianSpawnSettings = new PedestrianSpawnSettings();
+    [SerializeField] private CollisionSettings _collisionSettings = new CollisionSettings();
 
     private DiContainer _container;
     private BattleFeature _battleFeature;
@@ -86,6 +88,11 @@ namespace Code.Infrastructure
         _pedestrianSpawnSettings = new PedestrianSpawnSettings();
 
       _container.BindInstance(_pedestrianSpawnSettings).AsSingle();
+
+      if (_collisionSettings == null)
+        _collisionSettings = new CollisionSettings();
+
+      _container.BindInstance(_collisionSettings).AsSingle();
 
       Vector3 spawnPosition = _heroSpawn != null ? _heroSpawn.position : Vector3.zero;
       _container.Bind<IHeroSpawnPoint>().To<HeroSpawnPoint>().AsSingle()

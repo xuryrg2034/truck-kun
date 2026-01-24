@@ -1,3 +1,4 @@
+using Code.Gameplay.Features.Collision;
 using Code.Gameplay.Features.Hero;
 using Code.Gameplay.Features.Movement;
 using Code.Gameplay.Features.Pedestrian;
@@ -14,6 +15,7 @@ namespace Code.Gameplay
       Add(systems.Create<InputFeature>());
       Add(systems.Create<HeroFeature>());
       Add(systems.Create<PedestrianFeature>());
+      Add(systems.Create<CollisionFeature>());
       Add(systems.Create<BindViewFeature>());
       Add(systems.Create<MovementFeature>());
     }

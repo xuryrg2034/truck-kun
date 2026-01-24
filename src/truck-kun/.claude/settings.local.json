@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.Jenny-Gen.bat)",
+      "Bash(cmd /c \"cd /d C:\\\\Projects\\\\home\\\\unity\\\\Truck-kun\\\\Jenny && Jenny-Gen.bat\")",
+      "Bash(dotnet \"./Jenny/Jenny.Generator.Cli.dll\" gen:*)"
+    ]
+  }
+}
