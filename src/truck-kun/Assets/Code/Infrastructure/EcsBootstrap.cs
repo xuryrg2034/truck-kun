@@ -7,6 +7,7 @@ using Code.Gameplay.Features.Quest;
 using Code.Gameplay.Input;
 using Code.Infrastructure.Systems;
 using Code.Infrastructure.View;
+using Code.UI.QuestUI;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -30,6 +31,7 @@ namespace Code.Infrastructure
     private BattleFeature _battleFeature;
     private IInputService _inputService;
     private IDaySessionService _daySessionService;
+    private QuestUIController _questUI;
     private bool _dayFinishedHandled;
     private GameObject _dayFinishedOverlay;
 
@@ -53,6 +55,8 @@ namespace Code.Infrastructure
       ISystemFactory systems = _container.Resolve<ISystemFactory>();
       _battleFeature = systems.Create<BattleFeature>();
       _battleFeature.Initialize();
+
+      InitializeQuestUI(contexts);
 
       _daySessionService = _container.Resolve<IDaySessionService>();
       _daySessionService.StartDay();
@@ -148,6 +152,15 @@ namespace Code.Infrastructure
 
       (_inputService as System.IDisposable)?.Dispose();
       _inputService = null;
+    }
+
+    private void InitializeQuestUI(Contexts contexts)
+    {
+      GameObject questUIObj = new GameObject("QuestUI");
+      questUIObj.transform.SetParent(transform, false);
+
+      _questUI = questUIObj.AddComponent<QuestUIController>();
+      _questUI.Initialize(contexts.meta);
     }
 
     private void HandleDayFinished()
