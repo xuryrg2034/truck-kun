@@ -8,6 +8,7 @@ using Code.Gameplay.Features.Quest;
 using Code.Gameplay.Input;
 using Code.Infrastructure.Systems;
 using Code.Infrastructure.View;
+using Code.UI.EndDayScreen;
 using Code.UI.QuestUI;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -33,9 +34,11 @@ namespace Code.Infrastructure
     private BattleFeature _battleFeature;
     private IInputService _inputService;
     private IDaySessionService _daySessionService;
+    private IMoneyService _moneyService;
+    private IQuestService _questService;
     private QuestUIController _questUI;
+    private EndDayController _endDayController;
     private bool _dayFinishedHandled;
-    private GameObject _dayFinishedOverlay;
 
     private void Awake()
     {
@@ -58,7 +61,11 @@ namespace Code.Infrastructure
       _battleFeature = systems.Create<BattleFeature>();
       _battleFeature.Initialize();
 
+      _moneyService = _container.Resolve<IMoneyService>();
+      _questService = _container.Resolve<IQuestService>();
+
       InitializeQuestUI(contexts);
+      InitializeEndDayScreen(contexts);
 
       _daySessionService = _container.Resolve<IDaySessionService>();
       _daySessionService.StartDay();
@@ -171,6 +178,15 @@ namespace Code.Infrastructure
       _questUI.Initialize(contexts.meta);
     }
 
+    private void InitializeEndDayScreen(Contexts contexts)
+    {
+      GameObject endDayObj = new GameObject("EndDayScreen");
+      endDayObj.transform.SetParent(transform, false);
+
+      _endDayController = endDayObj.AddComponent<EndDayController>();
+      _endDayController.Initialize(contexts.meta, _moneyService, _questService);
+    }
+
     private void HandleDayFinished()
     {
       if (_dayFinishedHandled)
@@ -178,56 +194,7 @@ namespace Code.Infrastructure
 
       _dayFinishedHandled = true;
 
-      EnsureDayFinishedOverlay();
-    }
-
-    private void EnsureDayFinishedOverlay()
-    {
-      if (_dayFinishedOverlay != null)
-        return;
-
-      GameObject overlayRoot = new GameObject("DayFinishedOverlay");
-      overlayRoot.transform.SetParent(transform, false);
-
-      Canvas canvas = overlayRoot.AddComponent<Canvas>();
-      canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-      canvas.sortingOrder = short.MaxValue;
-
-      CanvasScaler scaler = overlayRoot.AddComponent<CanvasScaler>();
-      scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-      scaler.referenceResolution = new Vector2(1920f, 1080f);
-      scaler.matchWidthOrHeight = 0.5f;
-
-      overlayRoot.AddComponent<GraphicRaycaster>();
-
-      GameObject panel = new GameObject("Panel");
-      panel.transform.SetParent(overlayRoot.transform, false);
-      Image panelImage = panel.AddComponent<Image>();
-      panelImage.color = new Color(0f, 0f, 0f, 0.6f);
-
-      RectTransform panelRect = panel.GetComponent<RectTransform>();
-      panelRect.anchorMin = Vector2.zero;
-      panelRect.anchorMax = Vector2.one;
-      panelRect.offsetMin = Vector2.zero;
-      panelRect.offsetMax = Vector2.zero;
-
-      GameObject label = new GameObject("Label");
-      label.transform.SetParent(panel.transform, false);
-      Text text = label.AddComponent<Text>();
-      text.text = "DAY FINISHED";
-      text.alignment = TextAnchor.MiddleCenter;
-      text.fontSize = 64;
-      text.color = Color.white;
-      text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-      text.raycastTarget = false;
-
-      RectTransform labelRect = label.GetComponent<RectTransform>();
-      labelRect.anchorMin = new Vector2(0.5f, 0.5f);
-      labelRect.anchorMax = new Vector2(0.5f, 0.5f);
-      labelRect.sizeDelta = new Vector2(800f, 200f);
-      labelRect.anchoredPosition = Vector2.zero;
-
-      _dayFinishedOverlay = overlayRoot;
+      _endDayController.Show();
     }
   }
 }

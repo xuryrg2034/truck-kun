@@ -169,7 +169,7 @@ namespace Code.Gameplay.Features.Quest
         else
         {
           targetType = PedestrianKind.Target;
-          targetCount = 3;
+          targetCount = 300;
           reward = 100;
         }
 
