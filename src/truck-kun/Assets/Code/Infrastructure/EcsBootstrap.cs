@@ -3,6 +3,7 @@ using Code.Gameplay;
 using Code.Gameplay.Features.Collision;
 using Code.Gameplay.Features.Hero;
 using Code.Gameplay.Features.Pedestrian;
+using Code.Gameplay.Features.Quest;
 using Code.Gameplay.Input;
 using Code.Infrastructure.Systems;
 using Code.Infrastructure.View;
@@ -22,6 +23,8 @@ namespace Code.Infrastructure
     [SerializeField] private DaySessionSettings _daySessionSettings = new DaySessionSettings();
     [SerializeField] private PedestrianSpawnSettings _pedestrianSpawnSettings = new PedestrianSpawnSettings();
     [SerializeField] private CollisionSettings _collisionSettings = new CollisionSettings();
+    [SerializeField] private QuestConfig _questConfig;
+    [SerializeField] private QuestSettings _questSettings = new QuestSettings();
 
     private DiContainer _container;
     private BattleFeature _battleFeature;
@@ -101,6 +104,15 @@ namespace Code.Infrastructure
       _container.Bind<IHeroFactory>().To<HeroFactory>().AsSingle();
 
       _container.Bind<IEntityViewFactory>().To<EntityViewFactory>().AsSingle();
+
+      if (_questConfig != null)
+        _container.BindInstance(_questConfig).AsSingle();
+
+      if (_questSettings == null)
+        _questSettings = new QuestSettings();
+
+      _container.BindInstance(_questSettings).AsSingle();
+      _container.Bind<IQuestService>().To<QuestService>().AsSingle();
 
       _container.Bind<ISystemFactory>().To<SystemFactory>().AsSingle();
     }

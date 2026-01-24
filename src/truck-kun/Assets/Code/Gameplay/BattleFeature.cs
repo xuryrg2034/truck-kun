@@ -2,6 +2,7 @@ using Code.Gameplay.Features.Collision;
 using Code.Gameplay.Features.Hero;
 using Code.Gameplay.Features.Movement;
 using Code.Gameplay.Features.Pedestrian;
+using Code.Gameplay.Features.Quest;
 using Code.Gameplay.Input;
 using Code.Infrastructure.Systems;
 using Code.Infrastructure.View;
@@ -16,6 +17,7 @@ namespace Code.Gameplay
       Add(systems.Create<HeroFeature>());
       Add(systems.Create<PedestrianFeature>());
       Add(systems.Create<CollisionFeature>());
+      Add(systems.Create<QuestFeature>());
       Add(systems.Create<BindViewFeature>());
       Add(systems.Create<MovementFeature>());
     }

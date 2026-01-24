@@ -9,14 +9,26 @@
 public static class MetaComponentsLookup {
 
     public const int Id = 0;
+    public const int ActiveQuest = 1;
+    public const int DailyQuest = 2;
+    public const int QuestCompleted = 3;
+    public const int QuestProgress = 4;
 
-    public const int TotalComponents = 1;
+    public const int TotalComponents = 5;
 
     public static readonly string[] componentNames = {
-        "Id"
+        "Id",
+        "ActiveQuest",
+        "DailyQuest",
+        "QuestCompleted",
+        "QuestProgress"
     };
 
     public static readonly System.Type[] componentTypes = {
-        typeof(Code.Common.Id)
+        typeof(Code.Common.Id),
+        typeof(Code.Gameplay.Features.Quest.ActiveQuest),
+        typeof(Code.Gameplay.Features.Quest.DailyQuest),
+        typeof(Code.Gameplay.Features.Quest.QuestCompleted),
+        typeof(Code.Gameplay.Features.Quest.QuestProgress)
     };
 }
