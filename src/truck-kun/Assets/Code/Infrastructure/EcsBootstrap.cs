@@ -1,6 +1,7 @@
 using Code.Common;
 using Code.Gameplay;
 using Code.Gameplay.Features.Collision;
+using Code.Gameplay.Features.Economy;
 using Code.Gameplay.Features.Hero;
 using Code.Gameplay.Features.Pedestrian;
 using Code.Gameplay.Features.Quest;
@@ -26,6 +27,7 @@ namespace Code.Infrastructure
     [SerializeField] private CollisionSettings _collisionSettings = new CollisionSettings();
     [SerializeField] private QuestConfig _questConfig;
     [SerializeField] private QuestSettings _questSettings = new QuestSettings();
+    [SerializeField] private EconomySettings _economySettings = new EconomySettings();
 
     private DiContainer _container;
     private BattleFeature _battleFeature;
@@ -117,6 +119,12 @@ namespace Code.Infrastructure
 
       _container.BindInstance(_questSettings).AsSingle();
       _container.Bind<IQuestService>().To<QuestService>().AsSingle();
+
+      if (_economySettings == null)
+        _economySettings = new EconomySettings();
+
+      _container.BindInstance(_economySettings).AsSingle();
+      _container.Bind<IMoneyService>().To<MoneyService>().AsSingle();
 
       _container.Bind<ISystemFactory>().To<SystemFactory>().AsSingle();
     }

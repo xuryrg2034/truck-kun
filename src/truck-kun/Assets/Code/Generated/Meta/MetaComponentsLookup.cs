@@ -9,15 +9,21 @@
 public static class MetaComponentsLookup {
 
     public const int Id = 0;
-    public const int ActiveQuest = 1;
-    public const int DailyQuest = 2;
-    public const int QuestCompleted = 3;
-    public const int QuestProgress = 4;
+    public const int EarnedThisDay = 1;
+    public const int PenaltiesThisDay = 2;
+    public const int PlayerMoney = 3;
+    public const int ActiveQuest = 4;
+    public const int DailyQuest = 5;
+    public const int QuestCompleted = 6;
+    public const int QuestProgress = 7;
 
-    public const int TotalComponents = 5;
+    public const int TotalComponents = 8;
 
     public static readonly string[] componentNames = {
         "Id",
+        "EarnedThisDay",
+        "PenaltiesThisDay",
+        "PlayerMoney",
         "ActiveQuest",
         "DailyQuest",
         "QuestCompleted",
@@ -26,6 +32,9 @@ public static class MetaComponentsLookup {
 
     public static readonly System.Type[] componentTypes = {
         typeof(Code.Common.Id),
+        typeof(Code.Gameplay.Features.Economy.EarnedThisDay),
+        typeof(Code.Gameplay.Features.Economy.PenaltiesThisDay),
+        typeof(Code.Gameplay.Features.Economy.PlayerMoney),
         typeof(Code.Gameplay.Features.Quest.ActiveQuest),
         typeof(Code.Gameplay.Features.Quest.DailyQuest),
         typeof(Code.Gameplay.Features.Quest.QuestCompleted),
