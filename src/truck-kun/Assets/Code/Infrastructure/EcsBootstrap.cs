@@ -1,6 +1,7 @@
 using Code.Common;
 using Code.Gameplay;
 using Code.Gameplay.Features.Hero;
+using Code.Gameplay.Features.Pedestrian;
 using Code.Gameplay.Input;
 using Code.Infrastructure.Systems;
 using Code.Infrastructure.View;
@@ -18,6 +19,7 @@ namespace Code.Infrastructure
     [SerializeField] private EntityBehaviour _heroViewPrefab;
     [SerializeField] private RunnerMovementSettings _runnerMovement = new RunnerMovementSettings();
     [SerializeField] private DaySessionSettings _daySessionSettings = new DaySessionSettings();
+    [SerializeField] private PedestrianSpawnSettings _pedestrianSpawnSettings = new PedestrianSpawnSettings();
 
     private DiContainer _container;
     private BattleFeature _battleFeature;
@@ -79,6 +81,11 @@ namespace Code.Infrastructure
 
       _container.BindInstance(_daySessionSettings).AsSingle();
       _container.Bind<IDaySessionService>().To<DaySessionService>().AsSingle();
+
+      if (_pedestrianSpawnSettings == null)
+        _pedestrianSpawnSettings = new PedestrianSpawnSettings();
+
+      _container.BindInstance(_pedestrianSpawnSettings).AsSingle();
 
       Vector3 spawnPosition = _heroSpawn != null ? _heroSpawn.position : Vector3.zero;
       _container.Bind<IHeroSpawnPoint>().To<HeroSpawnPoint>().AsSingle()

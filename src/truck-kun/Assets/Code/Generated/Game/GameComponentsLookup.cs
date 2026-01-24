@@ -16,8 +16,10 @@ public static class GameComponentsLookup {
     public const int Hero = 5;
     public const int MoveDirection = 6;
     public const int MoveSpeed = 7;
+    public const int Pedestrian = 8;
+    public const int PedestrianType = 9;
 
-    public const int TotalComponents = 8;
+    public const int TotalComponents = 10;
 
     public static readonly string[] componentNames = {
         "Id",
@@ -27,7 +29,9 @@ public static class GameComponentsLookup {
         "WorldPosition",
         "Hero",
         "MoveDirection",
-        "MoveSpeed"
+        "MoveSpeed",
+        "Pedestrian",
+        "PedestrianType"
     };
 
     public static readonly System.Type[] componentTypes = {
@@ -38,6 +42,8 @@ public static class GameComponentsLookup {
         typeof(Code.Common.WorldPosition),
         typeof(Code.Gameplay.Features.Hero.Hero),
         typeof(Code.Gameplay.Features.Movement.MoveDirection),
-        typeof(Code.Gameplay.Features.Movement.MoveSpeed)
+        typeof(Code.Gameplay.Features.Movement.MoveSpeed),
+        typeof(Code.Gameplay.Features.Pedestrian.Pedestrian),
+        typeof(Code.Gameplay.Features.Pedestrian.PedestrianType)
     };
 }
