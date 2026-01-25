@@ -365,26 +365,27 @@ namespace Code.Meta.Upgrades
   #region Hub Service
 
   /// <summary>
-  /// Simplified upgrade service for Hub scene (without Entitas dependency)
+  /// Simplified upgrade service for Hub scene backed by GameStateService
   /// </summary>
   public class HubUpgradeService : IUpgradeService
   {
-    private const string UpgradesPrefsKey = "PlayerUpgrades";
-
     private readonly IMoneyService _moneyService;
+    private readonly Code.Infrastructure.GameStateService _gameState;
     private readonly UpgradeConfig _config;
-    private Dictionary<UpgradeType, int> _levels;
 
-    public HubUpgradeService(IMoneyService moneyService, UpgradeConfig config = null)
+    public HubUpgradeService(
+      IMoneyService moneyService,
+      Code.Infrastructure.GameStateService gameState,
+      UpgradeConfig config = null)
     {
       _moneyService = moneyService;
+      _gameState = gameState;
       _config = config ?? CreateDefaultConfig();
-      _levels = new Dictionary<UpgradeType, int>();
     }
 
     public void Initialize()
     {
-      LoadFromPlayerPrefs();
+      // GameStateService already loaded data
     }
 
     public bool PurchaseUpgrade(UpgradeType type)
@@ -404,15 +405,16 @@ namespace Code.Meta.Upgrades
       if (!_moneyService.SpendMoney(cost))
         return false;
 
-      _levels[type] = currentLevel + 1;
-      SaveToPlayerPrefs();
+      int newLevel = currentLevel + 1;
+      _gameState.SetUpgradeLevel(type, newLevel);
+      _gameState.Save();
 
       return true;
     }
 
     public int GetUpgradeLevel(UpgradeType type)
     {
-      return _levels.TryGetValue(type, out int level) ? level : 0;
+      return _gameState.GetUpgradeLevel(type);
     }
 
     public void ApplyUpgradesToSettings(RunnerMovementSettings settings)
@@ -452,32 +454,12 @@ namespace Code.Meta.Upgrades
 
     public void SaveToPlayerPrefs()
     {
-      List<string> parts = new();
-      foreach (var kvp in _levels)
-        parts.Add($"{kvp.Key}:{kvp.Value}");
-
-      PlayerPrefs.SetString(UpgradesPrefsKey, string.Join(",", parts));
-      PlayerPrefs.Save();
+      _gameState.Save();
     }
 
     public void LoadFromPlayerPrefs()
     {
-      _levels.Clear();
-      string data = PlayerPrefs.GetString(UpgradesPrefsKey, "");
-
-      if (string.IsNullOrEmpty(data))
-        return;
-
-      foreach (string part in data.Split(','))
-      {
-        string[] kv = part.Split(':');
-        if (kv.Length == 2 &&
-            Enum.TryParse(kv[0], out UpgradeType type) &&
-            int.TryParse(kv[1], out int level))
-        {
-          _levels[type] = level;
-        }
-      }
+      // GameStateService handles loading
     }
 
     private float GetBonus(UpgradeType type)

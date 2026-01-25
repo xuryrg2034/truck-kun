@@ -1,4 +1,5 @@
 using System;
+using Code.UI.HubUI;
 using UnityEngine;
 
 namespace Code.Hub
@@ -41,7 +42,7 @@ namespace Code.Hub
       if (other.CompareTag("Player"))
       {
         _playerInZone = true;
-        HubUIManager.Instance?.ShowInteractPrompt($"Press {_interactKey} - {_zoneName}");
+        HubMainUI.Instance?.ShowInteractPrompt($"[{_interactKey}] {_zoneName}");
       }
     }
 
@@ -50,7 +51,7 @@ namespace Code.Hub
       if (other.CompareTag("Player"))
       {
         _playerInZone = false;
-        HubUIManager.Instance?.HideInteractPrompt();
+        HubMainUI.Instance?.HideInteractPrompt();
       }
     }
 

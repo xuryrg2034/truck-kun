@@ -2,9 +2,9 @@ using System.Collections.Generic;
 using Code.Gameplay.Features.Economy;
 using Code.Gameplay.Features.Pedestrian;
 using Code.Gameplay.Features.Quest;
+using Code.Infrastructure;
 using Entitas;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace Code.UI.EndDayScreen
@@ -48,8 +48,26 @@ namespace Code.UI.EndDayScreen
         return;
 
       _isShown = true;
+
+      // Sync final balance to GameState
+      SyncToGameState();
+
       PopulateData();
       _panel.SetActive(true);
+    }
+
+    private void SyncToGameState()
+    {
+      GameStateService state = GameStateService.Instance;
+
+      // Update balance in persistent state
+      state.PlayerMoney = _moneyService.Balance;
+
+      // Track earnings history
+      state.AddEarnings(_moneyService.EarnedToday, _moneyService.PenaltiesToday);
+
+      // Save immediately
+      state.Save();
     }
 
     public void Hide()
@@ -108,22 +126,23 @@ namespace Code.UI.EndDayScreen
       contentLayout.childForceExpandWidth = true;
       contentLayout.childForceExpandHeight = false;
 
-      // Title
-      _titleText = CreateText(content.transform, "DAY COMPLETE", 48, FontStyle.Bold, Color.white);
+      // Title with day number
+      int dayNum = GameStateService.Instance.DayNumber;
+      _titleText = CreateText(content.transform, $"ДЕНЬ {dayNum} ЗАВЕРШЁН", 48, FontStyle.Bold, Color.white);
       SetLayoutHeight(_titleText.gameObject, 60f);
 
       // Separator
       CreateSeparator(content.transform);
 
       // Quests Section
-      Text questsHeader = CreateText(content.transform, "COMPLETED QUESTS", 24, FontStyle.Bold, SuccessColor);
+      Text questsHeader = CreateText(content.transform, "ВЫПОЛНЕННЫЕ ЗАДАНИЯ", 24, FontStyle.Bold, SuccessColor);
       SetLayoutHeight(questsHeader.gameObject, 35f);
 
       GameObject questsScroll = CreateScrollContainer(content.transform, "QuestsContainer", 120f);
       _questsContainer = questsScroll.transform.GetChild(0).GetChild(0);
 
       // Violations Section
-      Text violationsHeader = CreateText(content.transform, "VIOLATIONS", 24, FontStyle.Bold, FailColor);
+      Text violationsHeader = CreateText(content.transform, "НАРУШЕНИЯ", 24, FontStyle.Bold, FailColor);
       SetLayoutHeight(violationsHeader.gameObject, 35f);
 
       GameObject violationsScroll = CreateScrollContainer(content.transform, "ViolationsContainer", 80f);
@@ -145,16 +164,16 @@ namespace Code.UI.EndDayScreen
       LayoutElement finLayoutEl = financialSection.AddComponent<LayoutElement>();
       finLayoutEl.preferredHeight = 120f;
 
-      _earnedText = CreateText(financialSection.transform, "Earned: +0¥", 28, FontStyle.Normal, SuccessColor);
-      _penaltiesText = CreateText(financialSection.transform, "Penalties: -0¥", 28, FontStyle.Normal, FailColor);
+      _earnedText = CreateText(financialSection.transform, "Заработано: +0¥", 28, FontStyle.Normal, SuccessColor);
+      _penaltiesText = CreateText(financialSection.transform, "Штрафы: -0¥", 28, FontStyle.Normal, FailColor);
 
       CreateSeparator(financialSection.transform, 2f);
 
-      _totalText = CreateText(financialSection.transform, "Total: +0¥", 32, FontStyle.Bold, GoldColor);
-      _balanceText = CreateText(financialSection.transform, "Balance: 0¥", 36, FontStyle.Bold, Color.white);
+      _totalText = CreateText(financialSection.transform, "Итого: +0¥", 32, FontStyle.Bold, GoldColor);
+      _balanceText = CreateText(financialSection.transform, "Баланс: 0¥", 36, FontStyle.Bold, Color.white);
 
       // Continue Button
-      _continueButton = CreateButton(content.transform, "Continue to Hub", OnContinueClicked);
+      _continueButton = CreateButton(content.transform, "Вернуться в хаб", OnContinueClicked);
     }
 
     private void PopulateData()
@@ -164,30 +183,28 @@ namespace Code.UI.EndDayScreen
 
       // Quests
       IReadOnlyList<QuestProgressInfo> quests = _questService.GetQuestProgress();
-      int questRewards = 0;
 
       foreach (QuestProgressInfo quest in quests)
       {
         if (quest.IsCompleted)
         {
           int reward = GetQuestReward(quest.QuestId);
-          questRewards += reward;
 
-          string typeLabel = quest.TargetType == PedestrianKind.Target ? "targets" : "NPCs";
-          string text = $"✓ Hit {quest.RequiredCount} {typeLabel}  +{reward}¥";
+          string typeLabel = quest.TargetType == PedestrianKind.Target ? "целей" : "NPC";
+          string text = $"✓ Сбито {quest.RequiredCount} {typeLabel}  +{reward}¥";
           CreateText(_questsContainer, text, 20, FontStyle.Normal, SuccessColor);
         }
         else
         {
-          string typeLabel = quest.TargetType == PedestrianKind.Target ? "targets" : "NPCs";
-          string text = $"✗ Hit {quest.CurrentCount}/{quest.RequiredCount} {typeLabel}";
+          string typeLabel = quest.TargetType == PedestrianKind.Target ? "целей" : "NPC";
+          string text = $"✗ Сбито {quest.CurrentCount}/{quest.RequiredCount} {typeLabel}";
           CreateText(_questsContainer, text, 20, FontStyle.Normal, new Color(0.6f, 0.6f, 0.6f));
         }
       }
 
       if (quests.Count == 0)
       {
-        CreateText(_questsContainer, "No quests", 20, FontStyle.Italic, new Color(0.5f, 0.5f, 0.5f));
+        CreateText(_questsContainer, "Нет заданий", 20, FontStyle.Italic, new Color(0.5f, 0.5f, 0.5f));
       }
 
       // Violations
@@ -196,12 +213,12 @@ namespace Code.UI.EndDayScreen
 
       if (violationCount > 0)
       {
-        string text = $"✗ Hit {violationCount} forbidden NPC(s)  -{penalties}¥";
+        string text = $"✗ Сбито {violationCount} запрещённых NPC  -{penalties}¥";
         CreateText(_violationsContainer, text, 20, FontStyle.Normal, FailColor);
       }
       else
       {
-        CreateText(_violationsContainer, "No violations - Clean run!", 20, FontStyle.Normal, new Color(0.5f, 0.8f, 0.5f));
+        CreateText(_violationsContainer, "Нет нарушений - чистый заезд!", 20, FontStyle.Normal, new Color(0.5f, 0.8f, 0.5f));
       }
 
       // Financial Summary
@@ -210,13 +227,13 @@ namespace Code.UI.EndDayScreen
       int total = earned - penaltiesAmount;
       int balance = _moneyService.Balance;
 
-      _earnedText.text = $"Earned: +{earned}¥";
-      _penaltiesText.text = $"Penalties: -{penaltiesAmount}¥";
+      _earnedText.text = $"Заработано: +{earned}¥";
+      _penaltiesText.text = $"Штрафы: -{penaltiesAmount}¥";
 
-      _totalText.text = total >= 0 ? $"Total: +{total}¥" : $"Total: {total}¥";
+      _totalText.text = total >= 0 ? $"Итого: +{total}¥" : $"Итого: {total}¥";
       _totalText.color = total >= 0 ? SuccessColor : FailColor;
 
-      _balanceText.text = $"Balance: {balance}¥";
+      _balanceText.text = $"Баланс: {balance}¥";
     }
 
     private int GetQuestReward(int questId)
@@ -230,11 +247,8 @@ namespace Code.UI.EndDayScreen
 
     private void OnContinueClicked()
     {
-      // Save balance to PlayerPrefs so Hub can load it
-      PlayerPrefs.SetInt("PlayerBalance", _moneyService.Balance);
-      PlayerPrefs.Save();
-
-      SceneManager.LoadScene("HubScene");
+      // State already synced in Show(), use transition service
+      SceneTransitionService.Instance.LoadHub();
     }
 
     private Text CreateText(Transform parent, string content, int fontSize, FontStyle style, Color color)

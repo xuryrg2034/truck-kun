@@ -1,5 +1,7 @@
 using Code.Gameplay.Features.Economy;
+using Code.Infrastructure;
 using Code.Meta.Upgrades;
+using Code.UI.HubUI;
 using UnityEngine;
 
 namespace Code.Hub
@@ -9,14 +11,17 @@ namespace Code.Hub
     private IMoneyService _moneyService;
     private IUpgradeService _upgradeService;
     private HubController _player;
-    private HubUIManager _uiManager;
+    private HubMainUI _mainUI;
     private Camera _mainCamera;
 
     private void Awake()
     {
-      // Create services for hub (loads persisted data)
-      _moneyService = new HubMoneyService();
-      _upgradeService = new HubUpgradeService(_moneyService);
+      // Ensure GameStateService is loaded
+      GameStateService gameState = GameStateService.Instance;
+
+      // Create services for hub (backed by GameStateService)
+      _moneyService = new HubMoneyService(gameState);
+      _upgradeService = new HubUpgradeService(_moneyService, gameState);
       _upgradeService.Initialize();
 
       CreateEnvironment();
@@ -24,6 +29,8 @@ namespace Code.Hub
       CreateCamera();
       CreateZones();
       CreateUI();
+
+      Debug.Log($"[HubBootstrap] Hub loaded. Day {gameState.DayNumber}, Balance: {gameState.PlayerMoney}¥");
     }
 
     private void CreateEnvironment()
@@ -91,7 +98,7 @@ namespace Code.Hub
       InteractableZone foodZone = InteractableZone.Create(
         zonesParent,
         ZoneType.Food,
-        "Food Shop",
+        "Столовая",
         new Vector3(-8f, 0.75f, 8f),
         new Vector3(3f, 1.5f, 2f),
         new Color(0.8f, 0.5f, 0.2f)
@@ -102,7 +109,7 @@ namespace Code.Hub
       InteractableZone questZone = InteractableZone.Create(
         zonesParent,
         ZoneType.Quests,
-        "Quest Board",
+        "Доска заданий",
         new Vector3(0f, 1.5f, 10f),
         new Vector3(4f, 3f, 0.3f),
         new Color(0.2f, 0.5f, 0.8f)
@@ -113,7 +120,7 @@ namespace Code.Hub
       InteractableZone garageZone = InteractableZone.Create(
         zonesParent,
         ZoneType.Garage,
-        "Garage",
+        "Гараж",
         new Vector3(8f, 1f, 8f),
         new Vector3(4f, 2f, 4f),
         new Color(0.5f, 0.5f, 0.5f)
@@ -124,7 +131,7 @@ namespace Code.Hub
       InteractableZone startDayZone = InteractableZone.Create(
         zonesParent,
         ZoneType.StartDay,
-        "Start Day",
+        "Выход на работу",
         new Vector3(0f, 1.5f, -12f),
         new Vector3(3f, 3f, 1f),
         new Color(0.2f, 0.7f, 0.3f)
@@ -134,31 +141,31 @@ namespace Code.Hub
 
     private void CreateUI()
     {
-      GameObject uiObj = new GameObject("HubUI");
-      _uiManager = uiObj.AddComponent<HubUIManager>();
-      _uiManager.Initialize(_moneyService, _upgradeService);
+      GameObject uiObj = new GameObject("HubMainUI");
+      _mainUI = uiObj.AddComponent<HubMainUI>();
+      _mainUI.Initialize(_moneyService, _upgradeService);
     }
 
     private void OnZoneInteract(ZoneType type)
     {
-      _uiManager.ShowZonePanel(type);
+      _mainUI.ShowZonePanel(type);
     }
   }
 
   /// <summary>
-  /// Simple money service for hub that persists balance via PlayerPrefs
+  /// Money service for hub backed by GameStateService
   /// </summary>
   public class HubMoneyService : IMoneyService
   {
-    private const string BalanceKey = "PlayerBalance";
+    private readonly GameStateService _gameState;
 
-    public int Balance { get; private set; }
+    public int Balance => _gameState.PlayerMoney;
     public int EarnedToday => 0;
     public int PenaltiesToday => 0;
 
-    public HubMoneyService()
+    public HubMoneyService(GameStateService gameState)
     {
-      Balance = PlayerPrefs.GetInt(BalanceKey, 0);
+      _gameState = gameState;
     }
 
     public void AddMoney(int amount)
@@ -166,8 +173,8 @@ namespace Code.Hub
       if (amount <= 0)
         return;
 
-      Balance += amount;
-      Save();
+      _gameState.AddMoney(amount);
+      _gameState.Save();
     }
 
     public bool SpendMoney(int amount)
@@ -175,11 +182,10 @@ namespace Code.Hub
       if (amount <= 0)
         return true;
 
-      if (Balance < amount)
+      if (!_gameState.SpendMoney(amount))
         return false;
 
-      Balance -= amount;
-      Save();
+      _gameState.Save();
       return true;
     }
 
@@ -193,8 +199,8 @@ namespace Code.Hub
       if (amount <= 0)
         return;
 
-      Balance = Mathf.Max(0, Balance - amount);
-      Save();
+      _gameState.SpendMoney(amount);
+      _gameState.Save();
     }
 
     public void ResetDayEarnings()
@@ -204,13 +210,7 @@ namespace Code.Hub
 
     public void Initialize()
     {
-      // Already initialized in constructor
-    }
-
-    private void Save()
-    {
-      PlayerPrefs.SetInt(BalanceKey, Balance);
-      PlayerPrefs.Save();
+      // GameStateService handles initialization
     }
   }
 }

@@ -52,6 +52,12 @@ namespace Code.Infrastructure
         return;
       }
 
+      // Load persistent state
+      GameStateService gameState = GameStateService.Instance;
+
+      // Apply upgrades from persistent state to settings BEFORE binding
+      SceneBootstrapHelper.InitializeForGameplay(_runnerMovement, _economySettings);
+
       Contexts contexts = Contexts.sharedInstance;
       _container = new DiContainer();
 
@@ -60,10 +66,9 @@ namespace Code.Infrastructure
 
       _inputService = _container.Resolve<IInputService>();
 
-      // Initialize upgrades and apply to settings before creating features
+      // Initialize upgrades service (syncs with GameState)
       _upgradeService = _container.Resolve<IUpgradeService>();
       _upgradeService.Initialize();
-      _upgradeService.ApplyUpgradesToSettings(_runnerMovement);
 
       ISystemFactory systems = _container.Resolve<ISystemFactory>();
       _battleFeature = systems.Create<BattleFeature>();
@@ -79,6 +84,8 @@ namespace Code.Infrastructure
       _daySessionService.StartDay();
       if (_daySessionService.State == DayState.Finished)
         HandleDayFinished();
+
+      Debug.Log($"[EcsBootstrap] Day {gameState.DayNumber} started. Balance: {gameState.PlayerMoney}¥");
     }
 
     private void BindContexts(Contexts contexts)
