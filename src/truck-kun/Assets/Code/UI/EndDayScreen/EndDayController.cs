@@ -230,8 +230,11 @@ namespace Code.UI.EndDayScreen
 
     private void OnContinueClicked()
     {
-      // For now, just reload the current scene (Hub scene not implemented yet)
-      SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+      // Save balance to PlayerPrefs so Hub can load it
+      PlayerPrefs.SetInt("PlayerBalance", _moneyService.Balance);
+      PlayerPrefs.Save();
+
+      SceneManager.LoadScene("HubScene");
     }
 
     private Text CreateText(Transform parent, string content, int fontSize, FontStyle style, Color color)

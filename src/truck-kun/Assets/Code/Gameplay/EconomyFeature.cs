@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Code.Common;
 using Code.Gameplay.Features.Quest;
 using Code.Infrastructure.Systems;
+using Code.Meta.Upgrades;
 using Entitas;
 using Entitas.CodeGeneration.Attributes;
 using UnityEngine;
@@ -76,11 +77,20 @@ namespace Code.Gameplay.Features.Economy
   {
     private readonly MetaContext _meta;
     private readonly EconomySettings _settings;
+    private IUpgradeService _upgradeService;
 
-    public MoneyService(MetaContext meta, [InjectOptional] EconomySettings settings = null)
+    public MoneyService(
+      MetaContext meta,
+      [InjectOptional] EconomySettings settings = null)
     {
       _meta = meta;
       _settings = settings ?? new EconomySettings();
+    }
+
+    [Inject]
+    public void InjectUpgradeService([InjectOptional] IUpgradeService upgradeService)
+    {
+      _upgradeService = upgradeService;
     }
 
     public int Balance => _meta.hasPlayerMoney ? _meta.playerMoney.Amount : 0;
@@ -90,7 +100,12 @@ namespace Code.Gameplay.Features.Economy
     public void Initialize()
     {
       if (!_meta.hasPlayerMoney)
-        _meta.SetPlayerMoney(_settings.StartingMoney);
+      {
+        // Load saved balance from PlayerPrefs, or use starting money
+        int savedBalance = PlayerPrefs.GetInt("PlayerBalance", -1);
+        int initialMoney = savedBalance >= 0 ? savedBalance : _settings.StartingMoney;
+        _meta.SetPlayerMoney(initialMoney);
+      }
 
       if (!_meta.hasEarnedThisDay)
         _meta.SetEarnedThisDay(0);
@@ -104,10 +119,14 @@ namespace Code.Gameplay.Features.Economy
       if (amount <= 0)
         return;
 
-      int newBalance = Balance + amount;
+      // Apply money multiplier from upgrades
+      float multiplier = _upgradeService?.GetMoneyMultiplier() ?? 1f;
+      int finalAmount = Mathf.RoundToInt(amount * multiplier);
+
+      int newBalance = Balance + finalAmount;
       _meta.ReplacePlayerMoney(newBalance);
 
-      int newEarned = EarnedToday + amount;
+      int newEarned = EarnedToday + finalAmount;
       _meta.ReplaceEarnedThisDay(newEarned);
     }
 

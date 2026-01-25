@@ -74,7 +74,7 @@ namespace Code.Gameplay.Features.Quest
   public class QuestSettings
   {
     public int MinQuestsPerDay = 1;
-    public int MaxQuestsPerDay = 2;
+    public int MaxQuestsPerDay = 1;
   }
 
   #endregion

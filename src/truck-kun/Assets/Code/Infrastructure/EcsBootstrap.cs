@@ -8,6 +8,7 @@ using Code.Gameplay.Features.Quest;
 using Code.Gameplay.Input;
 using Code.Infrastructure.Systems;
 using Code.Infrastructure.View;
+using Code.Meta.Upgrades;
 using Code.UI.EndDayScreen;
 using Code.UI.QuestUI;
 using UnityEngine;
@@ -29,6 +30,7 @@ namespace Code.Infrastructure
     [SerializeField] private QuestConfig _questConfig;
     [SerializeField] private QuestSettings _questSettings = new QuestSettings();
     [SerializeField] private EconomySettings _economySettings = new EconomySettings();
+    [SerializeField] private UpgradeConfig _upgradeConfig;
 
     private DiContainer _container;
     private BattleFeature _battleFeature;
@@ -36,6 +38,7 @@ namespace Code.Infrastructure
     private IDaySessionService _daySessionService;
     private IMoneyService _moneyService;
     private IQuestService _questService;
+    private IUpgradeService _upgradeService;
     private QuestUIController _questUI;
     private EndDayController _endDayController;
     private bool _dayFinishedHandled;
@@ -56,6 +59,11 @@ namespace Code.Infrastructure
       BindServices();
 
       _inputService = _container.Resolve<IInputService>();
+
+      // Initialize upgrades and apply to settings before creating features
+      _upgradeService = _container.Resolve<IUpgradeService>();
+      _upgradeService.Initialize();
+      _upgradeService.ApplyUpgradesToSettings(_runnerMovement);
 
       ISystemFactory systems = _container.Resolve<ISystemFactory>();
       _battleFeature = systems.Create<BattleFeature>();
@@ -132,6 +140,11 @@ namespace Code.Infrastructure
 
       _container.BindInstance(_economySettings).AsSingle();
       _container.Bind<IMoneyService>().To<MoneyService>().AsSingle();
+
+      if (_upgradeConfig != null)
+        _container.BindInstance(_upgradeConfig).AsSingle();
+
+      _container.Bind<IUpgradeService>().To<UpgradeService>().AsSingle();
 
       _container.Bind<ISystemFactory>().To<SystemFactory>().AsSingle();
     }
