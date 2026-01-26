@@ -2,6 +2,7 @@ using Code.Common;
 using Code.Gameplay;
 using Code.Gameplay.Features.Collision;
 using Code.Gameplay.Features.Economy;
+using Code.Gameplay.Features.Feedback;
 using Code.Gameplay.Features.Hero;
 using Code.Gameplay.Features.Pedestrian;
 using Code.Gameplay.Features.Quest;
@@ -31,6 +32,7 @@ namespace Code.Infrastructure
     [SerializeField] private QuestConfig _questConfig;
     [SerializeField] private QuestSettings _questSettings = new QuestSettings();
     [SerializeField] private EconomySettings _economySettings = new EconomySettings();
+    [SerializeField] private FeedbackSettings _feedbackSettings = new FeedbackSettings();
     [SerializeField] private UpgradeConfig _upgradeConfig;
 
     private DiContainer _container;
@@ -153,6 +155,15 @@ namespace Code.Infrastructure
 
       _container.BindInstance(_economySettings).AsSingle();
       _container.Bind<IMoneyService>().To<MoneyService>().AsSingle();
+
+      // Feedback services
+      if (_feedbackSettings == null)
+        _feedbackSettings = new FeedbackSettings();
+
+      _container.BindInstance(_feedbackSettings).AsSingle();
+      _container.Bind<IAudioService>().To<AudioService>().AsSingle();
+      _container.Bind<IHitEffectService>().To<HitEffectService>().AsSingle();
+      _container.Bind<IFloatingTextService>().To<FloatingTextService>().AsSingle();
 
       if (_upgradeConfig != null)
         _container.BindInstance(_upgradeConfig).AsSingle();
