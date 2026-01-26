@@ -339,6 +339,7 @@ namespace Code.Infrastructure
 
   public enum SceneType
   {
+    MainMenu,
     Hub,
     Gameplay
   }
@@ -348,6 +349,7 @@ namespace Code.Infrastructure
   /// </summary>
   public class SceneTransitionService : MonoBehaviour
   {
+    private const string MainMenuSceneName = "MainMenuScene";
     private const string HubSceneName = "HubScene";
     private const string GameplaySceneName = "GameScene";
     private const float MinLoadingTime = 0.5f;
@@ -388,6 +390,17 @@ namespace Code.Infrastructure
       _instance = this;
       DontDestroyOnLoad(gameObject);
       CreateLoadingUI();
+    }
+
+    public void LoadMainMenu(Action onComplete = null)
+    {
+      if (_isTransitioning)
+        return;
+
+      // Save current state before transition
+      GameStateService.Instance.Save();
+
+      StartCoroutine(LoadSceneAsync(MainMenuSceneName, SceneType.MainMenu, onComplete));
     }
 
     public void LoadHub(Action onComplete = null)
