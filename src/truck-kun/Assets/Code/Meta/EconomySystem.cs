@@ -22,7 +22,7 @@ namespace Code.Meta.Economy
       get
       {
         if (_cachedBalance == null)
-          _cachedBalance = Resources.Load<GameBalance>("GameBalance");
+          _cachedBalance = Resources.Load<GameBalance>("Configs/GameBalance");
         return _cachedBalance;
       }
     }

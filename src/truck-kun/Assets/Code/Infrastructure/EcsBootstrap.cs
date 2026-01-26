@@ -10,6 +10,7 @@ using Code.Gameplay.Features.Quest;
 using Code.Gameplay.Input;
 using Code.Infrastructure.Systems;
 using Code.Infrastructure.View;
+using Code.Meta.Difficulty;
 using Code.Meta.Upgrades;
 using Code.UI.EndDayScreen;
 using Code.UI.QuestUI;
@@ -43,6 +44,8 @@ namespace Code.Infrastructure
     [SerializeField] private UpgradeConfig _upgradeConfig;
 
     private IBalanceProvider _balanceProvider;
+    private IDifficultyService _difficultyService;
+    private DayCounterUI _dayCounterUI;
 
     private DiContainer _container;
     private BattleFeature _battleFeature;
@@ -69,6 +72,10 @@ namespace Code.Infrastructure
 
       // Load persistent state
       GameStateService gameState = GameStateService.Instance;
+      int currentDay = gameState.DayNumber;
+
+      // Initialize difficulty and apply scaling
+      InitializeDifficulty(currentDay);
 
       // Apply upgrades from persistent state to settings BEFORE binding
       SceneBootstrapHelper.InitializeForGameplay(_runnerMovement, _economySettings);
@@ -94,13 +101,19 @@ namespace Code.Infrastructure
 
       InitializeQuestUI(contexts);
       InitializeEndDayScreen(contexts);
+      InitializeDayCounterUI(currentDay);
+
+      // Handle milestone bonus
+      HandleMilestoneBonus(currentDay);
 
       _daySessionService = _container.Resolve<IDaySessionService>();
       _daySessionService.StartDay();
       if (_daySessionService.State == DayState.Finished)
         HandleDayFinished();
 
-      Debug.Log($"[EcsBootstrap] Day {gameState.DayNumber} started. Balance: {gameState.PlayerMoney}¥");
+      DifficultyConfig difficulty = _difficultyService.CurrentDifficulty;
+      Debug.Log($"[EcsBootstrap] Day {currentDay} started. Balance: {gameState.PlayerMoney}¥. " +
+                $"Difficulty: Quests={difficulty.QuestCount}, SpawnInterval={difficulty.PedestrianSpawnInterval:F2}");
     }
 
     private void BindContexts(Contexts contexts)
@@ -124,6 +137,10 @@ namespace Code.Infrastructure
         _container.BindInstance(_balanceProvider).AsSingle();
       else
         _container.Bind<IBalanceProvider>().To<BalanceProvider>().AsSingle();
+
+      // Bind difficulty service
+      if (_difficultyService != null)
+        _container.BindInstance(_difficultyService).AsSingle();
 
       if (_runnerMovement == null)
         _runnerMovement = new RunnerMovementSettings();
@@ -195,7 +212,7 @@ namespace Code.Infrastructure
     {
       // Try to use GameBalance if assigned, otherwise try to load from Resources
       if (_gameBalance == null)
-        _gameBalance = Resources.Load<GameBalance>("GameBalance");
+        _gameBalance = Resources.Load<GameBalance>("Configs/GameBalance");
 
       if (_gameBalance != null)
       {
@@ -320,6 +337,71 @@ namespace Code.Infrastructure
       _dayFinishedHandled = true;
 
       _endDayController.Show();
+    }
+
+    private void InitializeDifficulty(int dayNumber)
+    {
+      // Create difficulty settings from GameBalance or use defaults
+      DifficultyScalingSettings difficultySettings;
+
+      if (_gameBalance != null)
+      {
+        difficultySettings = _gameBalance.Difficulty.ToSettings();
+      }
+      else
+      {
+        difficultySettings = new DifficultyScalingSettings();
+      }
+
+      _difficultyService = new DifficultyScalingService(difficultySettings, _balanceProvider);
+      _difficultyService.ApplyDifficulty(dayNumber);
+
+      // Apply difficulty to settings
+      ApplyDifficultyToSettings(_difficultyService.CurrentDifficulty);
+    }
+
+    private void ApplyDifficultyToSettings(DifficultyConfig difficulty)
+    {
+      // Modify spawn settings based on difficulty
+      _pedestrianSpawnSettings.SpawnInterval = difficulty.PedestrianSpawnInterval;
+      _pedestrianSpawnSettings.MaxActive = difficulty.MaxPedestrians;
+      _pedestrianSpawnSettings.CrossingChance = difficulty.CrossingChance;
+
+      // Modify movement speed
+      _runnerMovement.ForwardSpeed *= difficulty.ForwardSpeedMultiplier;
+
+      // Modify quest settings
+      _questSettings.MinQuestsPerDay = difficulty.QuestCount;
+      _questSettings.MaxQuestsPerDay = difficulty.QuestCount;
+    }
+
+    private void InitializeDayCounterUI(int dayNumber)
+    {
+      GameObject dayCounterObj = new GameObject("DayCounterUI");
+      dayCounterObj.transform.SetParent(transform, false);
+
+      _dayCounterUI = dayCounterObj.AddComponent<DayCounterUI>();
+
+      DifficultyConfig difficulty = _difficultyService.CurrentDifficulty;
+      _dayCounterUI.Initialize(
+        dayNumber,
+        difficulty.IsMilestoneDay,
+        difficulty.MilestoneBonus
+      );
+    }
+
+    private void HandleMilestoneBonus(int dayNumber)
+    {
+      if (!_difficultyService.IsMilestoneDay(dayNumber))
+        return;
+
+      int bonus = _difficultyService.GetMilestoneBonus(dayNumber);
+      if (bonus > 0)
+      {
+        // Award bonus money
+        GameStateService.Instance.AddMoney(bonus);
+        Debug.Log($"[EcsBootstrap] Milestone Day {dayNumber}! Bonus: +{bonus}");
+      }
     }
   }
 }

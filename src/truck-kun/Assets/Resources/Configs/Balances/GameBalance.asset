@@ -122,3 +122,21 @@ MonoBehaviour:
     SFXVolume: 0.7
     RewardColor: {r: 0.2, g: 1, b: 0.3, a: 1}
     PenaltyColor: {r: 1, g: 0.3, b: 0.2, a: 1}
+  Difficulty:
+    BaseQuestCount: 1
+    QuestIncreaseEveryNDays: 5
+    MaxQuestCount: 5
+    BaseSpawnInterval: 1.5
+    MinSpawnInterval: 0.5
+    SpawnIntervalDecreasePerDay: 0.05
+    BaseSpeedMultiplier: 1
+    MaxSpeedMultiplier: 2
+    SpeedIncreasePerDay: 0.02
+    BaseCrossingChance: 0.3
+    MaxCrossingChance: 0.7
+    CrossingIncreasePerDay: 0.02
+    BaseMaxPedestrians: 12
+    MaxMaxPedestrians: 25
+    PedestrianIncreaseEveryNDays: 3
+    MilestoneEveryNDays: 5
+    MilestoneBonusMoney: 500

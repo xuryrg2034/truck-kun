@@ -18,6 +18,7 @@ namespace Code.Balance.Editor
     private bool _upgradesFoldout = true;
     private bool _upgradeListFoldout;
     private bool _feedbackFoldout = true;
+    private bool _difficultyFoldout = true;
 
     private static readonly Color HeaderColor = new Color(0.2f, 0.6f, 0.9f);
     private static readonly Color SectionBgColor = new Color(0.18f, 0.18f, 0.22f);
@@ -41,6 +42,7 @@ namespace Code.Balance.Editor
       DrawDaySection();
       DrawUpgradesSection();
       DrawFeedbackSection();
+      DrawDifficultySection();
 
       EditorGUILayout.Space(20);
       DrawButtons();
@@ -276,6 +278,112 @@ namespace Code.Balance.Editor
       }
     }
 
+    private void DrawDifficultySection()
+    {
+      _difficultyFoldout = DrawSectionHeader("Difficulty Progression", _difficultyFoldout);
+
+      if (_difficultyFoldout)
+      {
+        EditorGUI.indentLevel++;
+
+        SerializedProperty difficulty = serializedObject.FindProperty("Difficulty");
+
+        EditorGUILayout.LabelField("Quest Progression", EditorStyles.miniBoldLabel);
+        EditorGUILayout.PropertyField(difficulty.FindPropertyRelative("BaseQuestCount"),
+          new GUIContent("Base Quests", "Starting number of quests per day"));
+        EditorGUILayout.PropertyField(difficulty.FindPropertyRelative("QuestIncreaseEveryNDays"),
+          new GUIContent("Increase Every N Days", "Add quest every N days"));
+        EditorGUILayout.PropertyField(difficulty.FindPropertyRelative("MaxQuestCount"),
+          new GUIContent("Max Quests", "Maximum quests per day"));
+
+        EditorGUILayout.Space(5);
+        EditorGUILayout.LabelField("Spawn Rate Progression", EditorStyles.miniBoldLabel);
+        EditorGUILayout.PropertyField(difficulty.FindPropertyRelative("BaseSpawnInterval"),
+          new GUIContent("Base Interval", "Starting spawn interval (seconds)"));
+        EditorGUILayout.PropertyField(difficulty.FindPropertyRelative("MinSpawnInterval"),
+          new GUIContent("Min Interval", "Minimum spawn interval"));
+        EditorGUILayout.PropertyField(difficulty.FindPropertyRelative("SpawnIntervalDecreasePerDay"),
+          new GUIContent("Decrease/Day", "Spawn interval decrease per day"));
+
+        EditorGUILayout.Space(5);
+        EditorGUILayout.LabelField("Speed Progression", EditorStyles.miniBoldLabel);
+        EditorGUILayout.PropertyField(difficulty.FindPropertyRelative("BaseSpeedMultiplier"),
+          new GUIContent("Base Speed", "Starting speed multiplier"));
+        EditorGUILayout.PropertyField(difficulty.FindPropertyRelative("MaxSpeedMultiplier"),
+          new GUIContent("Max Speed", "Maximum speed multiplier"));
+        EditorGUILayout.PropertyField(difficulty.FindPropertyRelative("SpeedIncreasePerDay"),
+          new GUIContent("Increase/Day", "Speed increase per day"));
+
+        EditorGUILayout.Space(5);
+        EditorGUILayout.LabelField("Crossing Difficulty", EditorStyles.miniBoldLabel);
+        EditorGUILayout.PropertyField(difficulty.FindPropertyRelative("BaseCrossingChance"),
+          new GUIContent("Base Chance", "Starting crossing chance"));
+        EditorGUILayout.PropertyField(difficulty.FindPropertyRelative("MaxCrossingChance"),
+          new GUIContent("Max Chance", "Maximum crossing chance"));
+        EditorGUILayout.PropertyField(difficulty.FindPropertyRelative("CrossingIncreasePerDay"),
+          new GUIContent("Increase/Day", "Crossing chance increase per day"));
+
+        EditorGUILayout.Space(5);
+        EditorGUILayout.LabelField("Pedestrian Count", EditorStyles.miniBoldLabel);
+        EditorGUILayout.PropertyField(difficulty.FindPropertyRelative("BaseMaxPedestrians"),
+          new GUIContent("Base Max", "Starting max pedestrians"));
+        EditorGUILayout.PropertyField(difficulty.FindPropertyRelative("MaxMaxPedestrians"),
+          new GUIContent("Absolute Max", "Maximum pedestrians cap"));
+        EditorGUILayout.PropertyField(difficulty.FindPropertyRelative("PedestrianIncreaseEveryNDays"),
+          new GUIContent("Increase Every N Days", "Add pedestrians every N days"));
+
+        EditorGUILayout.Space(5);
+        EditorGUILayout.LabelField("Milestones", EditorStyles.miniBoldLabel);
+        EditorGUILayout.PropertyField(difficulty.FindPropertyRelative("MilestoneEveryNDays"),
+          new GUIContent("Every N Days", "Milestone occurs every N days"));
+        EditorGUILayout.PropertyField(difficulty.FindPropertyRelative("MilestoneBonusMoney"),
+          new GUIContent("Bonus Money", "Base bonus money for milestone"));
+
+        // Preview current difficulty for a day
+        EditorGUILayout.Space(10);
+        EditorGUILayout.LabelField("Difficulty Preview", EditorStyles.miniBoldLabel);
+
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.LabelField("Day:", GUILayout.Width(40));
+        int previewDay = EditorPrefs.GetInt("GameBalance_PreviewDay", 1);
+        previewDay = EditorGUILayout.IntSlider(previewDay, 1, 30);
+        EditorPrefs.SetInt("GameBalance_PreviewDay", previewDay);
+        EditorGUILayout.EndHorizontal();
+
+        // Calculate preview values
+        int questIncrements = (previewDay - 1) / _balance.Difficulty.QuestIncreaseEveryNDays;
+        int questCount = Mathf.Clamp(
+          _balance.Difficulty.BaseQuestCount + questIncrements,
+          1, _balance.Difficulty.MaxQuestCount);
+
+        float spawnInterval = Mathf.Max(
+          _balance.Difficulty.MinSpawnInterval,
+          _balance.Difficulty.BaseSpawnInterval - (previewDay - 1) * _balance.Difficulty.SpawnIntervalDecreasePerDay);
+
+        float speedMult = Mathf.Min(
+          _balance.Difficulty.MaxSpeedMultiplier,
+          _balance.Difficulty.BaseSpeedMultiplier + (previewDay - 1) * _balance.Difficulty.SpeedIncreasePerDay);
+
+        float crossingChance = Mathf.Min(
+          _balance.Difficulty.MaxCrossingChance,
+          _balance.Difficulty.BaseCrossingChance + (previewDay - 1) * _balance.Difficulty.CrossingIncreasePerDay);
+
+        bool isMilestone = previewDay > 1 && previewDay % _balance.Difficulty.MilestoneEveryNDays == 0;
+
+        EditorGUILayout.HelpBox(
+          $"Day {previewDay}:\n" +
+          $"  Quests: {questCount}\n" +
+          $"  Spawn Interval: {spawnInterval:F2}s\n" +
+          $"  Speed Multiplier: {speedMult:F2}x\n" +
+          $"  Crossing Chance: {crossingChance:P0}\n" +
+          (isMilestone ? $"  MILESTONE DAY! Bonus: {_balance.Difficulty.MilestoneBonusMoney * (previewDay / _balance.Difficulty.MilestoneEveryNDays)}¥" : ""),
+          isMilestone ? MessageType.Warning : MessageType.Info);
+
+        EditorGUI.indentLevel--;
+        EditorGUILayout.Space(10);
+      }
+    }
+
     private bool DrawSectionHeader(string title, bool foldout)
     {
       EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
@@ -343,12 +451,17 @@ namespace Code.Balance.Editor
     private void CopyToResources()
     {
       string assetPath = AssetDatabase.GetAssetPath(_balance);
-      string resourcesPath = "Assets/Resources/GameBalance.asset";
+      string resourcesPath = "Assets/Resources/Configs/GameBalance.asset";
 
-      // Ensure Resources folder exists
+      // Ensure Resources/Configs folder exists
       if (!AssetDatabase.IsValidFolder("Assets/Resources"))
       {
         AssetDatabase.CreateFolder("Assets", "Resources");
+      }
+
+      if (!AssetDatabase.IsValidFolder("Assets/Resources/Configs"))
+      {
+        AssetDatabase.CreateFolder("Assets/Resources", "Configs");
       }
 
       if (assetPath != resourcesPath)
@@ -359,7 +472,7 @@ namespace Code.Balance.Editor
       }
       else
       {
-        Debug.Log("[GameBalance] Already in Resources folder");
+        Debug.Log("[GameBalance] Already in Resources/Configs folder");
       }
     }
 

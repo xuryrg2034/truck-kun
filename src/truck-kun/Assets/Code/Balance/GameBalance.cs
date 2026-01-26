@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Code.Gameplay.Features.Pedestrian;
+using Code.Meta.Difficulty;
 using Code.Meta.Upgrades;
 using UnityEngine;
 
@@ -214,6 +215,9 @@ namespace Code.Balance
     [Header("Feedback Effects")]
     public FeedbackBalance Feedback = new();
 
+    [Header("Difficulty Progression")]
+    public DifficultyBalance Difficulty = new();
+
     public void ResetToDefaults()
     {
       Movement = new MovementBalance();
@@ -222,6 +226,7 @@ namespace Code.Balance
       Day = new DayBalance();
       Upgrades = new UpgradeBalance();
       Feedback = new FeedbackBalance();
+      Difficulty = new DifficultyBalance();
     }
 
     #region Helper Methods
@@ -303,7 +308,7 @@ namespace Code.Balance
 
   public class BalanceProvider : IBalanceProvider
   {
-    private const string BalanceResourcePath = "GameBalance";
+    private const string BalanceResourcePath = "Configs/GameBalance";
 
     private GameBalance _balance;
 
