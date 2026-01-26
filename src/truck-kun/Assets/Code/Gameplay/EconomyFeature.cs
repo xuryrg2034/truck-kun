@@ -222,6 +222,15 @@ namespace Code.Gameplay.Features.Economy
 
     protected override void Execute(List<GameEntity> entities)
     {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+      // Skip penalties in God Mode
+      if (Code.DevTools.DebugService.GodModeEnabled)
+      {
+        UnityEngine.Debug.Log("[Economy] Penalty skipped (God Mode)");
+        return;
+      }
+#endif
+
       foreach (GameEntity violation in entities)
       {
         _moneyService.ApplyPenalty(_settings.ViolationPenalty);

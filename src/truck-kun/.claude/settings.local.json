@@ -4,7 +4,11 @@
       "Bash(.Jenny-Gen.bat)",
       "Bash(cmd /c \"cd /d C:\\\\Projects\\\\home\\\\unity\\\\Truck-kun\\\\Jenny && Jenny-Gen.bat\")",
       "Bash(dotnet \"./Jenny/Jenny.Generator.Cli.dll\" gen:*)",
-      "Bash(dotnet:*)"
+      "Bash(dotnet:*)",
+      "Bash(if [ -f \"C:/Projects/home/unity/Truck-kun/src/truck-kun/Assets/Code/Debug.meta\" ])",
+      "Bash(then mv \"C:/Projects/home/unity/Truck-kun/src/truck-kun/Assets/Code/Debug.meta\" \"C:/Projects/home/unity/Truck-kun/src/truck-kun/Assets/Code/DevTools.meta\")",
+      "Bash(else echo \"No .meta file found\")",
+      "Bash(fi)"
     ]
   }
 }
