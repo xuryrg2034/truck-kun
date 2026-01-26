@@ -226,6 +226,29 @@ namespace Code.Infrastructure
       Debug.Log("[GameState] Reset to defaults");
     }
 
+    public void ResetProgress()
+    {
+      _state.PlayerMoney = StartingMoney;
+      _state.DayNumber = 1;
+      _state.UpgradeLevels.Clear();
+      _state.TotalEarned = 0;
+      _state.TotalPenalties = 0;
+
+      Save();
+      OnMoneyChanged?.Invoke(_state.PlayerMoney);
+      Debug.Log("[GameState] Progress reset: Money=1000, Day=1, Upgrades=0");
+    }
+
+    public bool CanAffordFood(int foodCost = 100)
+    {
+      return _state.PlayerMoney >= foodCost;
+    }
+
+    public bool IsGameOver(int minimumRequired = 100)
+    {
+      return _state.PlayerMoney < minimumRequired;
+    }
+
     public GameState GetStateCopy()
     {
       return _state.Clone();

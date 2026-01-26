@@ -1,5 +1,6 @@
 using Code.Gameplay.Features.Economy;
 using Code.Infrastructure;
+using Code.Meta.Economy;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -7,7 +8,7 @@ namespace Code.UI.HubUI
 {
   public class FoodPanel : HubPanelBase
   {
-    private const int FoodCost = 100;
+    private static int FoodCost => EconomyConstants.DailyFoodCost;
 
     private IMoneyService _moneyService;
     private Button _buyButton;

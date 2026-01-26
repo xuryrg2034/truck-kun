@@ -1,5 +1,6 @@
 using Code.Gameplay.Features.Economy;
 using Code.Infrastructure;
+using Code.Meta.Economy;
 using Code.Meta.Upgrades;
 using Code.UI.HubUI;
 using UnityEngine;
@@ -13,6 +14,7 @@ namespace Code.Hub
     private HubController _player;
     private HubMainUI _mainUI;
     private Camera _mainCamera;
+    private GameOverPanel _gameOverPanel;
 
     private void Awake()
     {
@@ -29,8 +31,26 @@ namespace Code.Hub
       CreateCamera();
       CreateZones();
       CreateUI();
+      CreateGameOverPanel();
 
       Debug.Log($"[HubBootstrap] Hub loaded. Day {gameState.DayNumber}, Balance: {gameState.PlayerMoney}¥");
+
+      CheckGameOver(gameState);
+    }
+
+    private void CreateGameOverPanel()
+    {
+      GameObject gameOverObj = new GameObject("GameOverPanel");
+      _gameOverPanel = gameOverObj.AddComponent<GameOverPanel>();
+    }
+
+    private void CheckGameOver(GameStateService gameState)
+    {
+      if (gameState.IsGameOver(EconomyConstants.MinimumRequiredMoney))
+      {
+        Debug.Log($"[HubBootstrap] Game Over! Balance {gameState.PlayerMoney}¥ < {EconomyConstants.MinimumRequiredMoney}¥");
+        _gameOverPanel.Show();
+      }
     }
 
     private void CreateEnvironment()
