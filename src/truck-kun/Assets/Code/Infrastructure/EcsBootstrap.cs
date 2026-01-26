@@ -27,6 +27,7 @@ namespace Code.Infrastructure
     [SerializeField] private DaySessionSettings _daySessionSettings = new DaySessionSettings();
     [SerializeField] private PedestrianSpawnSettings _pedestrianSpawnSettings = new PedestrianSpawnSettings();
     [SerializeField] private CollisionSettings _collisionSettings = new CollisionSettings();
+    [SerializeField] private PedestrianConfig _pedestrianConfig;
     [SerializeField] private QuestConfig _questConfig;
     [SerializeField] private QuestSettings _questSettings = new QuestSettings();
     [SerializeField] private EconomySettings _economySettings = new EconomySettings();
@@ -119,6 +120,11 @@ namespace Code.Infrastructure
         _pedestrianSpawnSettings = new PedestrianSpawnSettings();
 
       _container.BindInstance(_pedestrianSpawnSettings).AsSingle();
+
+      if (_pedestrianConfig != null)
+        _container.BindInstance(_pedestrianConfig).AsSingle();
+
+      _container.Bind<IPedestrianFactory>().To<PedestrianFactory>().AsSingle();
 
       if (_collisionSettings == null)
         _collisionSettings = new CollisionSettings();

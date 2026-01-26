@@ -68,6 +68,11 @@ namespace Code.Gameplay.Features.Quest
     public int MinCount = 1;
     public int MaxCount = 5;
     public int BaseReward = 100;
+
+    public string GetDescription()
+    {
+      return TargetType.GetDisplayNameRu();
+    }
   }
 
   [Serializable]
@@ -84,7 +89,12 @@ namespace Code.Gameplay.Features.Quest
   [CreateAssetMenu(fileName = "QuestConfig", menuName = "Truck-kun/Quest Config")]
   public class QuestConfig : ScriptableObject
   {
-    [SerializeField] private List<QuestDefinition> _availableQuests = new();
+    [SerializeField] private List<QuestDefinition> _availableQuests = new()
+    {
+      new QuestDefinition { TargetType = PedestrianKind.StudentNerd, MinCount = 3, MaxCount = 5, BaseReward = 100 },
+      new QuestDefinition { TargetType = PedestrianKind.Salaryman, MinCount = 2, MaxCount = 4, BaseReward = 120 },
+      new QuestDefinition { TargetType = PedestrianKind.Teenager, MinCount = 3, MaxCount = 6, BaseReward = 80 }
+    };
     [SerializeField] private int _rewardPerTarget = 10;
 
     public IReadOnlyList<QuestDefinition> AvailableQuests => _availableQuests;
@@ -96,6 +106,16 @@ namespace Code.Gameplay.Features.Quest
         return null;
 
       return _availableQuests[UnityEngine.Random.Range(0, _availableQuests.Count)];
+    }
+
+    public QuestDefinition GetQuestForType(PedestrianKind kind)
+    {
+      foreach (QuestDefinition quest in _availableQuests)
+      {
+        if (quest.TargetType == kind)
+          return quest;
+      }
+      return null;
     }
   }
 
@@ -153,6 +173,13 @@ namespace Code.Gameplay.Features.Quest
     {
       ClearExistingQuests();
 
+      // Available non-protected types for quests
+      PedestrianKind[] availableTypes = {
+        PedestrianKind.StudentNerd,
+        PedestrianKind.Salaryman,
+        PedestrianKind.Teenager
+      };
+
       for (int i = 0; i < count; i++)
       {
         PedestrianKind targetType;
@@ -168,9 +195,10 @@ namespace Code.Gameplay.Features.Quest
         }
         else
         {
-          targetType = PedestrianKind.Target;
-          targetCount = 300;
-          reward = 100;
+          // Default: pick random non-protected type
+          targetType = availableTypes[UnityEngine.Random.Range(0, availableTypes.Length)];
+          targetCount = UnityEngine.Random.Range(3, 6);
+          reward = 100 + targetCount * 10;
         }
 
         MetaEntity quest = _meta.CreateEntity();
@@ -197,7 +225,8 @@ namespace Code.Gameplay.Features.Quest
 
     public bool IsViolation(PedestrianKind type)
     {
-      return type == PedestrianKind.Forbidden;
+      // Protected types (elderly) cause violation
+      return type.IsProtectedType();
     }
 
     public void RegisterHit(PedestrianKind type)
