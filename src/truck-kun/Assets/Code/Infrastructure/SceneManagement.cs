@@ -21,6 +21,8 @@ namespace Code.Infrastructure
     public Dictionary<UpgradeType, int> UpgradeLevels;
     public int TotalEarned;
     public int TotalPenalties;
+    public int TotalDaysPlayed;
+    public int HighScore;
 
     public GameState()
     {
@@ -29,6 +31,8 @@ namespace Code.Infrastructure
       UpgradeLevels = new Dictionary<UpgradeType, int>();
       TotalEarned = 0;
       TotalPenalties = 0;
+      TotalDaysPlayed = 0;
+      HighScore = 0;
     }
 
     public GameState Clone()
@@ -39,7 +43,9 @@ namespace Code.Infrastructure
         DayNumber = DayNumber,
         UpgradeLevels = new Dictionary<UpgradeType, int>(UpgradeLevels),
         TotalEarned = TotalEarned,
-        TotalPenalties = TotalPenalties
+        TotalPenalties = TotalPenalties,
+        TotalDaysPlayed = TotalDaysPlayed,
+        HighScore = HighScore
       };
     }
   }
@@ -85,6 +91,22 @@ namespace Code.Infrastructure
       set => _state.TotalPenalties = value;
     }
 
+    public int TotalDaysPlayed
+    {
+      get => _state.TotalDaysPlayed;
+      set => _state.TotalDaysPlayed = value;
+    }
+
+    public int HighScore
+    {
+      get => _state.HighScore;
+      set
+      {
+        if (value > _state.HighScore)
+          _state.HighScore = value;
+      }
+    }
+
     public event Action<int> OnMoneyChanged;
     public event Action OnStateLoaded;
 
@@ -107,6 +129,33 @@ namespace Code.Infrastructure
     public Dictionary<UpgradeType, int> GetAllUpgradeLevels()
     {
       return new Dictionary<UpgradeType, int>(_state.UpgradeLevels);
+    }
+
+    public Dictionary<UpgradeType, int> GetAllUpgrades()
+    {
+      return GetAllUpgradeLevels();
+    }
+
+    public void ApplySaveData(SaveData saveData)
+    {
+      if (saveData == null)
+        return;
+
+      _state.PlayerMoney = saveData.PlayerMoney;
+      _state.DayNumber = saveData.CurrentDay;
+      _state.TotalDaysPlayed = saveData.TotalDaysPlayed;
+      _state.HighScore = saveData.HighScore;
+
+      _state.UpgradeLevels.Clear();
+      foreach (KeyValuePair<UpgradeType, int> upgrade in saveData.GetUpgradesDictionary())
+      {
+        _state.UpgradeLevels[upgrade.Key] = upgrade.Value;
+      }
+
+      OnMoneyChanged?.Invoke(_state.PlayerMoney);
+      OnStateLoaded?.Invoke();
+
+      Debug.Log($"[GameState] Applied save data: Day {_state.DayNumber}, Money {_state.PlayerMoney}¥");
     }
 
     public bool SpendMoney(int amount)
@@ -138,6 +187,22 @@ namespace Code.Infrastructure
     public void IncrementDay()
     {
       DayNumber++;
+      TotalDaysPlayed++;
+
+      // Update high score (highest day reached)
+      if (DayNumber > _state.HighScore)
+      {
+        _state.HighScore = DayNumber;
+      }
+    }
+
+    public void UpdateHighScore(int score)
+    {
+      if (score > _state.HighScore)
+      {
+        _state.HighScore = score;
+        Debug.Log($"[GameState] New high score: {score}");
+      }
     }
 
     public void Save()
@@ -149,6 +214,8 @@ namespace Code.Infrastructure
         PlayerPrefs.SetInt($"{SaveKey}_Day", _state.DayNumber);
         PlayerPrefs.SetInt($"{SaveKey}_TotalEarned", _state.TotalEarned);
         PlayerPrefs.SetInt($"{SaveKey}_TotalPenalties", _state.TotalPenalties);
+        PlayerPrefs.SetInt($"{SaveKey}_TotalDaysPlayed", _state.TotalDaysPlayed);
+        PlayerPrefs.SetInt($"{SaveKey}_HighScore", _state.HighScore);
 
         // Save upgrades
         List<string> upgradeParts = new();
@@ -161,7 +228,7 @@ namespace Code.Infrastructure
         PlayerPrefs.SetInt($"{SaveKey}_Exists", 1);
         PlayerPrefs.Save();
 
-        Debug.Log($"[GameState] Saved: Money={_state.PlayerMoney}, Day={_state.DayNumber}");
+        Debug.Log($"[GameState] Saved: Money={_state.PlayerMoney}, Day={_state.DayNumber}, HighScore={_state.HighScore}");
       }
       catch (Exception e)
       {
@@ -184,6 +251,8 @@ namespace Code.Infrastructure
         _state.DayNumber = PlayerPrefs.GetInt($"{SaveKey}_Day", 1);
         _state.TotalEarned = PlayerPrefs.GetInt($"{SaveKey}_TotalEarned", 0);
         _state.TotalPenalties = PlayerPrefs.GetInt($"{SaveKey}_TotalPenalties", 0);
+        _state.TotalDaysPlayed = PlayerPrefs.GetInt($"{SaveKey}_TotalDaysPlayed", 0);
+        _state.HighScore = PlayerPrefs.GetInt($"{SaveKey}_HighScore", 0);
 
         // Load upgrades
         _state.UpgradeLevels.Clear();
@@ -202,7 +271,7 @@ namespace Code.Infrastructure
           }
         }
 
-        Debug.Log($"[GameState] Loaded: Money={_state.PlayerMoney}, Day={_state.DayNumber}");
+        Debug.Log($"[GameState] Loaded: Money={_state.PlayerMoney}, Day={_state.DayNumber}, HighScore={_state.HighScore}");
         OnStateLoaded?.Invoke();
       }
       catch (Exception e)
@@ -219,6 +288,8 @@ namespace Code.Infrastructure
       PlayerPrefs.DeleteKey($"{SaveKey}_Day");
       PlayerPrefs.DeleteKey($"{SaveKey}_TotalEarned");
       PlayerPrefs.DeleteKey($"{SaveKey}_TotalPenalties");
+      PlayerPrefs.DeleteKey($"{SaveKey}_TotalDaysPlayed");
+      PlayerPrefs.DeleteKey($"{SaveKey}_HighScore");
       PlayerPrefs.DeleteKey($"{SaveKey}_Upgrades");
       PlayerPrefs.Save();
 
@@ -233,10 +304,17 @@ namespace Code.Infrastructure
       _state.UpgradeLevels.Clear();
       _state.TotalEarned = 0;
       _state.TotalPenalties = 0;
+      _state.TotalDaysPlayed = 0;
+      // Note: HighScore is NOT reset - it's a permanent achievement
 
       Save();
       OnMoneyChanged?.Invoke(_state.PlayerMoney);
       Debug.Log("[GameState] Progress reset: Money=1000, Day=1, Upgrades=0");
+    }
+
+    public bool HasSaveData()
+    {
+      return PlayerPrefs.GetInt($"{SaveKey}_Exists", 0) == 1;
     }
 
     public bool CanAffordFood(int foodCost = 100)
