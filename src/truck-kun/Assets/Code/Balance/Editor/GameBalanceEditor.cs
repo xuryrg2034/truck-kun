@@ -50,7 +50,7 @@ namespace Code.Balance.Editor
       serializedObject.ApplyModifiedProperties();
     }
 
-    private void DrawHeader()
+    new private void DrawHeader()
     {
       EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 

@@ -552,51 +552,7 @@ MonoBehaviour:
   _inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   _heroSpawn: {fileID: 1614511770}
   _heroViewPrefab: {fileID: 710005, guid: 7c4d1e2f3a5b6c7d8e9f0a1b2c3d4e5f, type: 3}
-  _gameBalance: {fileID: 11400000, guid: 1389ac1fa7f3ec64689b7a013f015807, type: 2}
-  _runnerMovement:
-    ForwardSpeed: 5
-    LateralSpeed: 5
-    RoadWidth: 6
-  _daySessionSettings:
-    DurationSeconds: 60
-  _pedestrianSpawnSettings:
-    TargetPrefab: {fileID: 730005, guid: a1b2c3d4e5f60718293a4b5c6d7e8f90, type: 3}
-    ForbiddenPrefab: {fileID: 740005, guid: b2c3d4e5f60718293a4b5c6d7e8f9012, type: 3}
-    SpawnInterval: 1.5
-    SpawnDistanceAhead: 18
-    DespawnDistanceBehind: 12
-    MaxActive: 12
-    LateralMargin: 0.5
-    CrossingChance: 0.5
-    CrossingSpeedMultiplier: 1
-    RoadCenterOffset: 0
-    SidewalkOffset: 1.5
-    RotateToCrossingDirection: 1
-  _collisionSettings:
-    HitRadius: 1.2
-  _pedestrianConfig: {fileID: 0}
-  _questConfig: {fileID: 0}
-  _questSettings:
-    MinQuestsPerDay: 1
-    MaxQuestsPerDay: 2
-  _economySettings:
-    StartingMoney: 1000
-    ViolationPenalty: 100
-    BaseQuestReward: 50
-  _feedbackSettings:
-    ParticleBurstCount: 15
-    ParticleLifetime: 1
-    ParticleSpeed: 3
-    ParticleGravity: 2
-    ParticleSize: 0.15
-    FloatSpeed: 2
-    FloatDuration: 1.2
-    FontSize: 32
-    RewardColor: {r: 0.2, g: 1, b: 0.3, a: 1}
-    PenaltyColor: {r: 1, g: 0.3, b: 0.2, a: 1}
-    NeutralHitColor: {r: 1, g: 1, b: 1, a: 1}
-    SFXVolume: 0.7
-  _upgradeConfig: {fileID: 11400000, guid: 86b1b0d6b23a76b45bb611bacca08e3c, type: 2}
+  _gameBalance: {fileID: 11400000, guid: 46cb37bfe38293a46ae3a0a9f9367855, type: 2}
 --- !u!4 &1614511770 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 720001, guid: 8d5e2f3a4b6c7d8e9f0a1b2c3d4e5f60, type: 3}

@@ -16,7 +16,6 @@ using Code.UI.EndDayScreen;
 using Code.UI.QuestUI;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.UI;
 using Zenject;
 
 namespace Code.Infrastructure
@@ -28,20 +27,17 @@ namespace Code.Infrastructure
     [SerializeField] private Transform _heroSpawn;
     [SerializeField] private EntityBehaviour _heroViewPrefab;
 
-    [Header("Centralized Balance (Recommended)")]
+    [Header("Balance (Required)")]
     [SerializeField] private GameBalance _gameBalance;
 
-    [Header("Legacy Settings (Used if GameBalance is null)")]
-    [SerializeField] private RunnerMovementSettings _runnerMovement = new RunnerMovementSettings();
-    [SerializeField] private DaySessionSettings _daySessionSettings = new DaySessionSettings();
-    [SerializeField] private PedestrianSpawnSettings _pedestrianSpawnSettings = new PedestrianSpawnSettings();
-    [SerializeField] private CollisionSettings _collisionSettings = new CollisionSettings();
-    [SerializeField] private PedestrianConfig _pedestrianConfig;
-    [SerializeField] private QuestConfig _questConfig;
-    [SerializeField] private QuestSettings _questSettings = new QuestSettings();
-    [SerializeField] private EconomySettings _economySettings = new EconomySettings();
-    [SerializeField] private FeedbackSettings _feedbackSettings = new FeedbackSettings();
-    [SerializeField] private UpgradeConfig _upgradeConfig;
+    // Runtime settings (created from GameBalance)
+    private RunnerMovementSettings _runnerMovement;
+    private DaySessionSettings _daySessionSettings;
+    private PedestrianSpawnSettings _pedestrianSpawnSettings;
+    private CollisionSettings _collisionSettings;
+    private QuestSettings _questSettings;
+    private EconomySettings _economySettings;
+    private FeedbackSettings _feedbackSettings;
 
     private IBalanceProvider _balanceProvider;
     private IDifficultyService _difficultyService;
@@ -60,15 +56,13 @@ namespace Code.Infrastructure
 
     private void Awake()
     {
-      if (_inputActions == null)
-      {
-        Debug.LogError("EcsBootstrap: InputActionAsset is missing.");
-        enabled = false;
+      // Validate required references
+      if (!ValidateRequirements())
         return;
-      }
 
-      // Initialize balance provider
+      // Initialize from GameBalance
       InitializeBalance();
+      CreateSettingsFromBalance();
 
       // Load persistent state
       GameStateService gameState = GameStateService.Instance;
@@ -77,9 +71,10 @@ namespace Code.Infrastructure
       // Initialize difficulty and apply scaling
       InitializeDifficulty(currentDay);
 
-      // Apply upgrades from persistent state to settings BEFORE binding
-      SceneBootstrapHelper.InitializeForGameplay(_runnerMovement, _economySettings);
+      // Apply upgrades from persistent state
+      ApplyUpgradesToSettings();
 
+      // Setup DI container
       Contexts contexts = Contexts.sharedInstance;
       _container = new DiContainer();
 
@@ -88,10 +83,11 @@ namespace Code.Infrastructure
 
       _inputService = _container.Resolve<IInputService>();
 
-      // Initialize upgrades service (syncs with GameState)
+      // Initialize upgrades service
       _upgradeService = _container.Resolve<IUpgradeService>();
       _upgradeService.Initialize();
 
+      // Create game systems
       ISystemFactory systems = _container.Resolve<ISystemFactory>();
       _battleFeature = systems.Create<BattleFeature>();
       _battleFeature.Initialize();
@@ -99,6 +95,7 @@ namespace Code.Infrastructure
       _moneyService = _container.Resolve<IMoneyService>();
       _questService = _container.Resolve<IQuestService>();
 
+      // Initialize UI
       InitializeQuestUI(contexts);
       InitializeEndDayScreen(contexts);
       InitializeDayCounterUI(currentDay);
@@ -106,14 +103,150 @@ namespace Code.Infrastructure
       // Handle milestone bonus
       HandleMilestoneBonus(currentDay);
 
+      // Start day
       _daySessionService = _container.Resolve<IDaySessionService>();
       _daySessionService.StartDay();
+
       if (_daySessionService.State == DayState.Finished)
         HandleDayFinished();
 
       DifficultyConfig difficulty = _difficultyService.CurrentDifficulty;
       Debug.Log($"[EcsBootstrap] Day {currentDay} started. Balance: {gameState.PlayerMoney}¥. " +
                 $"Difficulty: Quests={difficulty.QuestCount}, SpawnInterval={difficulty.PedestrianSpawnInterval:F2}");
+    }
+
+    private bool ValidateRequirements()
+    {
+      bool valid = true;
+
+      if (_inputActions == null)
+      {
+        Debug.LogError("[EcsBootstrap] InputActionAsset is missing!");
+        valid = false;
+      }
+
+      if (_heroViewPrefab == null)
+      {
+        Debug.LogError("[EcsBootstrap] Hero View Prefab is missing!");
+        valid = false;
+      }
+
+      // Try to load GameBalance from Resources if not assigned
+      if (_gameBalance == null)
+        _gameBalance = Resources.Load<GameBalance>("Configs/GameBalance");
+
+      if (_gameBalance == null)
+      {
+        Debug.LogError("[EcsBootstrap] GameBalance is required! Create one at Assets/Resources/Configs/GameBalance.asset");
+        valid = false;
+      }
+
+      if (!valid)
+        enabled = false;
+
+      return valid;
+    }
+
+    private void InitializeBalance()
+    {
+      _balanceProvider = new BalanceProvider(_gameBalance);
+      Debug.Log("[EcsBootstrap] Using GameBalance configuration");
+    }
+
+    private void CreateSettingsFromBalance()
+    {
+      GameBalance balance = _balanceProvider.Balance;
+
+      // Movement settings
+      _runnerMovement = new RunnerMovementSettings
+      {
+        ForwardSpeed = balance.Movement.ForwardSpeed,
+        LateralSpeed = balance.Movement.LateralSpeed,
+        RoadWidth = balance.Movement.RoadWidth
+      };
+
+      // Collision settings
+      _collisionSettings = new CollisionSettings
+      {
+        HitRadius = balance.Movement.HitRadius
+      };
+
+      // Pedestrian settings
+      _pedestrianSpawnSettings = new PedestrianSpawnSettings
+      {
+        SpawnInterval = balance.Pedestrians.SpawnInterval,
+        SpawnDistanceAhead = balance.Pedestrians.SpawnDistanceAhead,
+        DespawnDistanceBehind = balance.Pedestrians.DespawnDistanceBehind,
+        MaxActive = balance.Pedestrians.MaxActive,
+        LateralMargin = balance.Pedestrians.LateralMargin,
+        CrossingChance = balance.Pedestrians.CrossingChance,
+        CrossingSpeedMultiplier = balance.Pedestrians.CrossingSpeedMultiplier,
+        SidewalkOffset = balance.Pedestrians.SidewalkOffset
+      };
+
+      // Day settings
+      _daySessionSettings = new DaySessionSettings
+      {
+        DurationSeconds = balance.Day.DurationSeconds
+      };
+
+      // Quest settings
+      _questSettings = new QuestSettings
+      {
+        MinQuestsPerDay = balance.Day.MinQuestsPerDay,
+        MaxQuestsPerDay = balance.Day.MaxQuestsPerDay
+      };
+
+      // Economy settings
+      _economySettings = new EconomySettings
+      {
+        StartingMoney = balance.Economy.StartingMoney,
+        ViolationPenalty = balance.Economy.ViolationPenalty,
+        BaseQuestReward = balance.Economy.BaseQuestReward
+      };
+
+      // Feedback settings
+      _feedbackSettings = new FeedbackSettings
+      {
+        ParticleBurstCount = balance.Feedback.ParticleBurstCount,
+        ParticleLifetime = balance.Feedback.ParticleLifetime,
+        ParticleSpeed = balance.Feedback.ParticleSpeed,
+        ParticleGravity = balance.Feedback.ParticleGravity,
+        ParticleSize = balance.Feedback.ParticleSize,
+        FloatSpeed = balance.Feedback.FloatSpeed,
+        FloatDuration = balance.Feedback.FloatDuration,
+        FontSize = balance.Feedback.FontSize,
+        SFXVolume = balance.Feedback.SFXVolume,
+        RewardColor = balance.Feedback.RewardColor,
+        PenaltyColor = balance.Feedback.PenaltyColor
+      };
+    }
+
+    private void ApplyUpgradesToSettings()
+    {
+      GameStateService state = GameStateService.Instance;
+
+      // Apply speed upgrade
+      float speedBonus = GetUpgradeBonus(UpgradeType.SpeedBoost, state.GetUpgradeLevel(UpgradeType.SpeedBoost));
+      if (speedBonus > 0)
+        _runnerMovement.ForwardSpeed *= (1f + speedBonus);
+
+      // Apply maneuverability upgrade
+      float lateralBonus = GetUpgradeBonus(UpgradeType.Maneuverability, state.GetUpgradeLevel(UpgradeType.Maneuverability));
+      if (lateralBonus > 0)
+        _runnerMovement.LateralSpeed *= (1f + lateralBonus);
+
+      // Set starting money from state
+      _economySettings.StartingMoney = state.PlayerMoney;
+    }
+
+    private float GetUpgradeBonus(UpgradeType type, int level)
+    {
+      if (level <= 0)
+        return 0f;
+
+      UpgradeDefinitionBalance upgrade = _balanceProvider.Balance.GetUpgrade(type);
+      return upgrade?.GetBonus(level) ?? 0f;
     }
 
     private void BindContexts(Contexts contexts)
@@ -126,156 +259,74 @@ namespace Code.Infrastructure
 
     private void BindServices()
     {
+      // Core services
       _container.BindInstance(_inputActions).AsSingle();
       _container.Bind<IInputService>().To<InputSystemService>().AsSingle();
-
       _container.Bind<IIdentifierService>().To<IdentifierService>().AsSingle();
       _container.Bind<ITimeService>().To<UnityTimeService>().AsSingle();
 
-      // Bind balance provider
-      if (_balanceProvider != null)
-        _container.BindInstance(_balanceProvider).AsSingle();
-      else
-        _container.Bind<IBalanceProvider>().To<BalanceProvider>().AsSingle();
+      // Balance
+      _container.BindInstance(_balanceProvider).AsSingle();
+      _container.BindInstance(_difficultyService).AsSingle();
 
-      // Bind difficulty service
-      if (_difficultyService != null)
-        _container.BindInstance(_difficultyService).AsSingle();
-
-      if (_runnerMovement == null)
-        _runnerMovement = new RunnerMovementSettings();
-
+      // Settings
       _container.BindInstance(_runnerMovement).AsSingle();
-
-      if (_daySessionSettings == null)
-        _daySessionSettings = new DaySessionSettings();
-
       _container.BindInstance(_daySessionSettings).AsSingle();
+      _container.BindInstance(_pedestrianSpawnSettings).AsSingle();
+      _container.BindInstance(_collisionSettings).AsSingle();
+      _container.BindInstance(_questSettings).AsSingle();
+      _container.BindInstance(_economySettings).AsSingle();
+      _container.BindInstance(_feedbackSettings).AsSingle();
+
+      // Day service
       _container.Bind<IDaySessionService>().To<DaySessionService>().AsSingle();
 
-      if (_pedestrianSpawnSettings == null)
-        _pedestrianSpawnSettings = new PedestrianSpawnSettings();
+      // Pedestrian factory
+      PedestrianFactory pedestrianFactory = new PedestrianFactory(null, _balanceProvider);
+      _container.BindInstance<IPedestrianFactory>(pedestrianFactory).AsSingle();
 
-      _container.BindInstance(_pedestrianSpawnSettings).AsSingle();
-
-      if (_pedestrianConfig != null)
-        _container.BindInstance(_pedestrianConfig).AsSingle();
-
-      _container.Bind<IPedestrianFactory>().To<PedestrianFactory>().AsSingle();
-
-      if (_collisionSettings == null)
-        _collisionSettings = new CollisionSettings();
-
-      _container.BindInstance(_collisionSettings).AsSingle();
-
+      // Hero factory
       Vector3 spawnPosition = _heroSpawn != null ? _heroSpawn.position : Vector3.zero;
       _container.Bind<IHeroSpawnPoint>().To<HeroSpawnPoint>().AsSingle()
         .WithArguments(spawnPosition, _heroViewPrefab);
-
       _container.Bind<IHeroFactory>().To<HeroFactory>().AsSingle();
-
       _container.Bind<IEntityViewFactory>().To<EntityViewFactory>().AsSingle();
 
-      if (_questConfig != null)
-        _container.BindInstance(_questConfig).AsSingle();
-
-      if (_questSettings == null)
-        _questSettings = new QuestSettings();
-
-      _container.BindInstance(_questSettings).AsSingle();
+      // Quest service
       _container.Bind<IQuestService>().To<QuestService>().AsSingle();
 
-      if (_economySettings == null)
-        _economySettings = new EconomySettings();
-
-      _container.BindInstance(_economySettings).AsSingle();
+      // Money service
       _container.Bind<IMoneyService>().To<MoneyService>().AsSingle();
 
       // Feedback services
-      if (_feedbackSettings == null)
-        _feedbackSettings = new FeedbackSettings();
-
-      _container.BindInstance(_feedbackSettings).AsSingle();
       _container.Bind<IAudioService>().To<AudioService>().AsSingle();
       _container.Bind<IHitEffectService>().To<HitEffectService>().AsSingle();
       _container.Bind<IFloatingTextService>().To<FloatingTextService>().AsSingle();
 
-      if (_upgradeConfig != null)
-        _container.BindInstance(_upgradeConfig).AsSingle();
-
+      // Upgrade service
       _container.Bind<IUpgradeService>().To<UpgradeService>().AsSingle();
 
+      // System factory
       _container.Bind<ISystemFactory>().To<SystemFactory>().AsSingle();
     }
 
-    private void InitializeBalance()
+    private void InitializeDifficulty(int dayNumber)
     {
-      // Try to use GameBalance if assigned, otherwise try to load from Resources
-      if (_gameBalance == null)
-        _gameBalance = Resources.Load<GameBalance>("Configs/GameBalance");
+      DifficultyScalingSettings difficultySettings = _gameBalance.Difficulty.ToSettings();
+      _difficultyService = new DifficultyScalingService(difficultySettings, _balanceProvider);
+      _difficultyService.ApplyDifficulty(dayNumber);
 
-      if (_gameBalance != null)
-      {
-        _balanceProvider = new BalanceProvider(_gameBalance);
-        ApplyBalanceToSettings();
-        Debug.Log("[EcsBootstrap] Using centralized GameBalance");
-      }
-      else
-      {
-        _balanceProvider = new BalanceProvider();
-        Debug.Log("[EcsBootstrap] Using legacy settings (GameBalance not found)");
-      }
-    }
+      // Apply difficulty scaling to settings
+      DifficultyConfig difficulty = _difficultyService.CurrentDifficulty;
 
-    private void ApplyBalanceToSettings()
-    {
-      if (_balanceProvider == null)
-        return;
+      _pedestrianSpawnSettings.SpawnInterval = difficulty.PedestrianSpawnInterval;
+      _pedestrianSpawnSettings.MaxActive = difficulty.MaxPedestrians;
+      _pedestrianSpawnSettings.CrossingChance = difficulty.CrossingChance;
 
-      GameBalance balance = _balanceProvider.Balance;
+      _runnerMovement.ForwardSpeed *= difficulty.ForwardSpeedMultiplier;
 
-      // Apply Movement settings
-      _runnerMovement.ForwardSpeed = balance.Movement.ForwardSpeed;
-      _runnerMovement.LateralSpeed = balance.Movement.LateralSpeed;
-      _runnerMovement.RoadWidth = balance.Movement.RoadWidth;
-
-      // Apply Collision settings
-      _collisionSettings.HitRadius = balance.Movement.HitRadius;
-
-      // Apply Pedestrian settings
-      _pedestrianSpawnSettings.SpawnInterval = balance.Pedestrians.SpawnInterval;
-      _pedestrianSpawnSettings.SpawnDistanceAhead = balance.Pedestrians.SpawnDistanceAhead;
-      _pedestrianSpawnSettings.DespawnDistanceBehind = balance.Pedestrians.DespawnDistanceBehind;
-      _pedestrianSpawnSettings.MaxActive = balance.Pedestrians.MaxActive;
-      _pedestrianSpawnSettings.LateralMargin = balance.Pedestrians.LateralMargin;
-      _pedestrianSpawnSettings.CrossingChance = balance.Pedestrians.CrossingChance;
-      _pedestrianSpawnSettings.CrossingSpeedMultiplier = balance.Pedestrians.CrossingSpeedMultiplier;
-      _pedestrianSpawnSettings.SidewalkOffset = balance.Pedestrians.SidewalkOffset;
-
-      // Apply Day settings
-      _daySessionSettings.DurationSeconds = balance.Day.DurationSeconds;
-
-      // Apply Quest settings
-      _questSettings.MinQuestsPerDay = balance.Day.MinQuestsPerDay;
-      _questSettings.MaxQuestsPerDay = balance.Day.MaxQuestsPerDay;
-
-      // Apply Economy settings
-      _economySettings.StartingMoney = balance.Economy.StartingMoney;
-      _economySettings.ViolationPenalty = balance.Economy.ViolationPenalty;
-      _economySettings.BaseQuestReward = balance.Economy.BaseQuestReward;
-
-      // Apply Feedback settings
-      _feedbackSettings.ParticleBurstCount = balance.Feedback.ParticleBurstCount;
-      _feedbackSettings.ParticleLifetime = balance.Feedback.ParticleLifetime;
-      _feedbackSettings.ParticleSpeed = balance.Feedback.ParticleSpeed;
-      _feedbackSettings.ParticleGravity = balance.Feedback.ParticleGravity;
-      _feedbackSettings.ParticleSize = balance.Feedback.ParticleSize;
-      _feedbackSettings.FloatSpeed = balance.Feedback.FloatSpeed;
-      _feedbackSettings.FloatDuration = balance.Feedback.FloatDuration;
-      _feedbackSettings.FontSize = balance.Feedback.FontSize;
-      _feedbackSettings.SFXVolume = balance.Feedback.SFXVolume;
-      _feedbackSettings.RewardColor = balance.Feedback.RewardColor;
-      _feedbackSettings.PenaltyColor = balance.Feedback.PenaltyColor;
+      _questSettings.MinQuestsPerDay = difficulty.QuestCount;
+      _questSettings.MaxQuestsPerDay = difficulty.QuestCount;
     }
 
     private void Update()
@@ -335,44 +386,7 @@ namespace Code.Infrastructure
         return;
 
       _dayFinishedHandled = true;
-
       _endDayController.Show();
-    }
-
-    private void InitializeDifficulty(int dayNumber)
-    {
-      // Create difficulty settings from GameBalance or use defaults
-      DifficultyScalingSettings difficultySettings;
-
-      if (_gameBalance != null)
-      {
-        difficultySettings = _gameBalance.Difficulty.ToSettings();
-      }
-      else
-      {
-        difficultySettings = new DifficultyScalingSettings();
-      }
-
-      _difficultyService = new DifficultyScalingService(difficultySettings, _balanceProvider);
-      _difficultyService.ApplyDifficulty(dayNumber);
-
-      // Apply difficulty to settings
-      ApplyDifficultyToSettings(_difficultyService.CurrentDifficulty);
-    }
-
-    private void ApplyDifficultyToSettings(DifficultyConfig difficulty)
-    {
-      // Modify spawn settings based on difficulty
-      _pedestrianSpawnSettings.SpawnInterval = difficulty.PedestrianSpawnInterval;
-      _pedestrianSpawnSettings.MaxActive = difficulty.MaxPedestrians;
-      _pedestrianSpawnSettings.CrossingChance = difficulty.CrossingChance;
-
-      // Modify movement speed
-      _runnerMovement.ForwardSpeed *= difficulty.ForwardSpeedMultiplier;
-
-      // Modify quest settings
-      _questSettings.MinQuestsPerDay = difficulty.QuestCount;
-      _questSettings.MaxQuestsPerDay = difficulty.QuestCount;
     }
 
     private void InitializeDayCounterUI(int dayNumber)
@@ -398,7 +412,6 @@ namespace Code.Infrastructure
       int bonus = _difficultyService.GetMilestoneBonus(dayNumber);
       if (bonus > 0)
       {
-        // Award bonus money
         GameStateService.Instance.AddMoney(bonus);
         Debug.Log($"[EcsBootstrap] Milestone Day {dayNumber}! Bonus: +{bonus}");
       }

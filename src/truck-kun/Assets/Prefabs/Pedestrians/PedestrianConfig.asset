@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: PedestrianConfig
+  m_EditorClassIdentifier: Assembly-CSharp:Code.Gameplay.Features.Pedestrian:PedestrianConfig
+  _visualData:
+  - Kind: 0
+    Color: {r: 0.95, g: 0.95, b: 1, a: 1}
+    Scale: 0.85
+    ForwardTilt: 15
+    BaseSpeed: 2
+    Category: 0
+    DisplayName: Student
+  - Kind: 1
+    Color: {r: 0.4, g: 0.4, b: 0.45, a: 1}
+    Scale: 1
+    ForwardTilt: 0
+    BaseSpeed: 1.8
+    Category: 0
+    DisplayName: Salaryman
+  - Kind: 2
+    Color: {r: 1, g: 0.7, b: 0.8, a: 1}
+    Scale: 0.8
+    ForwardTilt: 10
+    BaseSpeed: 0.8
+    Category: 1
+    DisplayName: Grandma
+  - Kind: 3
+    Color: {r: 0.6, g: 0.45, b: 0.3, a: 1}
+    Scale: 0.9
+    ForwardTilt: 8
+    BaseSpeed: 0.9
+    Category: 1
+    DisplayName: Old Man
+  - Kind: 4
+    Color: {r: 0.2, g: 0.8, b: 0.4, a: 1}
+    Scale: 0.95
+    ForwardTilt: -5
+    BaseSpeed: 2.2
+    Category: 0
+    DisplayName: Teenager
+  _spawnWeights:
+  - Kind: 0
+    Weight: 0.25
+  - Kind: 1
+    Weight: 0.3
+  - Kind: 2
+    Weight: 0.15
+  - Kind: 3
+    Weight: 0.1
+  - Kind: 4
+    Weight: 0.2

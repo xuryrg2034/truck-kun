@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using Code.Common;
 using Code.Gameplay.Features.Quest;
-using Code.Infrastructure;
 using Code.Infrastructure.Systems;
+using Code.Meta.Upgrades;
 using Entitas;
 using Entitas.CodeGeneration.Attributes;
 using UnityEngine;
@@ -77,13 +77,16 @@ namespace Code.Gameplay.Features.Economy
   {
     private readonly MetaContext _meta;
     private readonly EconomySettings _settings;
+    private readonly IUpgradeService _upgradeService;
 
     public MoneyService(
       MetaContext meta,
-      [InjectOptional] EconomySettings settings = null)
+      [InjectOptional] EconomySettings settings = null,
+      [InjectOptional] IUpgradeService upgradeService = null)
     {
       _meta = meta;
       _settings = settings ?? new EconomySettings();
+      _upgradeService = upgradeService;
     }
 
     public int Balance => _meta.hasPlayerMoney ? _meta.playerMoney.Amount : 0;
@@ -112,8 +115,8 @@ namespace Code.Gameplay.Features.Economy
       if (amount <= 0)
         return;
 
-      // Apply money multiplier from upgrades (via GameStateService)
-      float multiplier = SceneBootstrapHelper.GetMoneyMultiplier();
+      // Apply money multiplier from upgrades
+      float multiplier = _upgradeService?.GetMoneyMultiplier() ?? 1f;
       int finalAmount = Mathf.RoundToInt(amount * multiplier);
 
       int newBalance = Balance + finalAmount;

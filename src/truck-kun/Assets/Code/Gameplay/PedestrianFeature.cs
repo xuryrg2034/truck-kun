@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Code.Balance;
 using Code.Common;
 using Code.Gameplay.Features.Hero;
 using Code.Infrastructure.Systems;
@@ -61,6 +62,7 @@ namespace Code.Gameplay.Features.Pedestrian
     public PedestrianKind Kind;
     public Color Color = Color.white;
     public float Scale = 1f;
+    public float Speed = 1f;
     public float ForwardTilt = 0f;        // X rotation (bent forward)
     public float BaseSpeed = 1.5f;        // Movement speed
     public PedestrianCategory Category = PedestrianCategory.Normal;
@@ -222,10 +224,6 @@ namespace Code.Gameplay.Features.Pedestrian
   [Serializable]
   public class PedestrianSpawnSettings
   {
-    [Header("Prefabs (Optional - will generate if null)")]
-    public EntityBehaviour TargetPrefab;
-    public EntityBehaviour ForbiddenPrefab;
-
     [Header("Spawn Settings")]
     public float SpawnInterval = 1.5f;
     public float SpawnDistanceAhead = 18f;
@@ -258,11 +256,13 @@ namespace Code.Gameplay.Features.Pedestrian
   public class PedestrianFactory : IPedestrianFactory
   {
     private readonly PedestrianConfig _config;
+    private readonly IBalanceProvider _balanceProvider;
     private readonly Dictionary<PedestrianKind, PedestrianVisualData> _visualCache = new();
 
-    public PedestrianFactory(PedestrianConfig config = null)
+    public PedestrianFactory(PedestrianConfig config = null, IBalanceProvider balanceProvider = null)
     {
       _config = config;
+      _balanceProvider = balanceProvider;
       InitializeCache();
     }
 
@@ -275,9 +275,27 @@ namespace Code.Gameplay.Features.Pedestrian
         if (kind == PedestrianKind.Target || kind == PedestrianKind.Forbidden)
           continue;
 
-        _visualCache[kind] = _config != null
+        PedestrianVisualData data = _config != null
           ? _config.GetVisualData(kind)
           : PedestrianVisualData.Default(kind);
+
+        // Override with GameBalance values if available
+        if (_balanceProvider?.Balance != null)
+        {
+          PedestrianTypeBalance balanceData = _balanceProvider.Balance.GetPedestrianTypeBalance(kind);
+          if (balanceData != null)
+          {
+            // Only override color if it's not white (white = default, nox  t set)
+            if (balanceData.Color != Color.white)
+              data.Color = balanceData.Color;
+
+            data.Scale = balanceData.Scale;
+            data.Speed = balanceData.Speed;
+            data.ForwardTilt = balanceData.ForwardTilt;
+          }
+        }
+
+        _visualCache[kind] = data;
       }
     }
 
@@ -340,14 +358,35 @@ namespace Code.Gameplay.Features.Pedestrian
       Renderer renderer = pedestrian.GetComponent<Renderer>();
       if (renderer != null)
       {
-        Material mat = new Material(Shader.Find("Standard"));
+        // Use existing material or create new one with fallback shader
+        Material mat = renderer.material;
+        if (mat == null)
+        {
+          Shader shader = Shader.Find("Standard");
+          if (shader == null)
+            shader = Shader.Find("Universal Render Pipeline/Lit");
+          if (shader == null)
+            shader = Shader.Find("Sprites/Default");
+
+          mat = shader != null ? new Material(shader) : new Material(Shader.Find("Hidden/InternalErrorShader"));
+        }
+
         mat.color = data.Color;
+
+        // Try to set main color via different property names
+        if (mat.HasProperty("_BaseColor"))
+          mat.SetColor("_BaseColor", data.Color);
+        if (mat.HasProperty("_Color"))
+          mat.SetColor("_Color", data.Color);
 
         // Add slight emission for protected types
         if (data.Category == PedestrianCategory.Protected)
         {
-          mat.EnableKeyword("_EMISSION");
-          mat.SetColor("_EmissionColor", data.Color * 0.3f);
+          if (mat.HasProperty("_EmissionColor"))
+          {
+            mat.EnableKeyword("_EMISSION");
+            mat.SetColor("_EmissionColor", data.Color * 0.3f);
+          }
         }
 
         renderer.material = mat;
@@ -377,15 +416,26 @@ namespace Code.Gameplay.Features.Pedestrian
       Renderer renderer = indicator.GetComponent<Renderer>();
       if (renderer != null)
       {
-        Material mat = new Material(Shader.Find("Standard"));
+        Material mat = renderer.material;
 
         // Color based on category
-        mat.color = data.Category == PedestrianCategory.Protected
+        Color indicatorColor = data.Category == PedestrianCategory.Protected
           ? new Color(1f, 0.3f, 0.3f)  // Red for protected
           : new Color(0.3f, 1f, 0.3f); // Green for normal
 
-        mat.EnableKeyword("_EMISSION");
-        mat.SetColor("_EmissionColor", mat.color * 0.5f);
+        mat.color = indicatorColor;
+
+        if (mat.HasProperty("_BaseColor"))
+          mat.SetColor("_BaseColor", indicatorColor);
+        if (mat.HasProperty("_Color"))
+          mat.SetColor("_Color", indicatorColor);
+
+        if (mat.HasProperty("_EmissionColor"))
+        {
+          mat.EnableKeyword("_EMISSION");
+          mat.SetColor("_EmissionColor", indicatorColor * 0.5f);
+        }
+
         renderer.material = mat;
       }
     }
@@ -534,41 +584,21 @@ namespace Code.Gameplay.Features.Pedestrian
       entity.AddWorldPosition(position);
 
       // Create visual
-      EntityBehaviour prefab = SelectPrefabForKind(kind);
-      if (prefab != null)
-      {
-        entity.AddViewPrefab(prefab);
-      }
-      else
-      {
-        GameObject visual = _factory.CreatePedestrianVisual(kind, position);
+      GameObject visual = _factory.CreatePedestrianVisual(kind, position);
 
-        // Rotate crossing pedestrians to face their direction
-        if (isCrossing && _settings.RotateToCrossingDirection)
-        {
-          bool movingRight = entity.crossingPedestrian.MovingRight;
-          visual.transform.rotation = Quaternion.Euler(
-            visualData.ForwardTilt,
-            movingRight ? 90f : -90f,
-            0f
+      // Rotate crossing pedestrians to face their direction
+      if (isCrossing && _settings.RotateToCrossingDirection)
+      {
+        bool movingRight = entity.crossingPedestrian.MovingRight;
+        visual.transform.rotation = Quaternion.Euler(
+          visualData.ForwardTilt,
+          movingRight ? 90f : -90f,
+          0f
           );
-        }
-
-        EntityBehaviour entityBehaviour = visual.AddComponent<EntityBehaviour>();
-        entity.AddView(entityBehaviour);
-        entityBehaviour.SetEntity(entity);
       }
-    }
 
-    private EntityBehaviour SelectPrefabForKind(PedestrianKind kind)
-    {
-      if (_factory.IsProtected(kind) && _settings.ForbiddenPrefab != null)
-        return _settings.ForbiddenPrefab;
-
-      if (!_factory.IsProtected(kind) && _settings.TargetPrefab != null)
-        return _settings.TargetPrefab;
-
-      return null;
+      EntityBehaviour entityBehaviour = visual.AddComponent<EntityBehaviour>();
+      entityBehaviour.SetEntity(entity);  // SetEntity adds View internally
     }
   }
 

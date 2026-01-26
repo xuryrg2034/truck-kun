@@ -41,11 +41,11 @@ namespace Code.Balance
     [Header("Type Weights (must sum to 1.0)")]
     public List<PedestrianTypeBalance> TypeBalances = new()
     {
-      new PedestrianTypeBalance { Kind = PedestrianKind.StudentNerd, SpawnWeight = 0.25f, Speed = 2f, Scale = 0.85f },
-      new PedestrianTypeBalance { Kind = PedestrianKind.Salaryman, SpawnWeight = 0.30f, Speed = 1.8f, Scale = 1f },
-      new PedestrianTypeBalance { Kind = PedestrianKind.Grandma, SpawnWeight = 0.15f, Speed = 0.8f, Scale = 0.8f },
-      new PedestrianTypeBalance { Kind = PedestrianKind.OldMan, SpawnWeight = 0.10f, Speed = 0.9f, Scale = 0.9f },
-      new PedestrianTypeBalance { Kind = PedestrianKind.Teenager, SpawnWeight = 0.20f, Speed = 2.2f, Scale = 0.95f }
+      new PedestrianTypeBalance { Kind = PedestrianKind.StudentNerd, SpawnWeight = 0.25f, Speed = 2f, Scale = 0.85f, Color = new Color(0.95f, 0.95f, 1f) },      // Light blue
+      new PedestrianTypeBalance { Kind = PedestrianKind.Salaryman, SpawnWeight = 0.30f, Speed = 1.8f, Scale = 1f, Color = new Color(0.4f, 0.4f, 0.45f) },        // Gray suit
+      new PedestrianTypeBalance { Kind = PedestrianKind.Grandma, SpawnWeight = 0.15f, Speed = 0.8f, Scale = 0.8f, Color = new Color(1f, 0.7f, 0.8f) },           // Pink
+      new PedestrianTypeBalance { Kind = PedestrianKind.OldMan, SpawnWeight = 0.10f, Speed = 0.9f, Scale = 0.9f, Color = new Color(0.6f, 0.45f, 0.3f) },         // Brown
+      new PedestrianTypeBalance { Kind = PedestrianKind.Teenager, SpawnWeight = 0.20f, Speed = 2.2f, Scale = 0.95f, Color = new Color(0.2f, 0.8f, 0.4f) }        // Bright green
     };
   }
 
