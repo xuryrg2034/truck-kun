@@ -43,6 +43,14 @@ namespace Code.Gameplay.Features.Pedestrian
     public PedestrianKind Value;
   }
 
+  [Game] public class CrossingPedestrian : IComponent
+  {
+    public float StartX;
+    public float TargetX;
+    public float Speed;
+    public bool MovingRight;
+  }
+
   #endregion
 
   #region Visual Data
@@ -225,10 +233,14 @@ namespace Code.Gameplay.Features.Pedestrian
     public int MaxActive = 12;
     public float LateralMargin = 0.5f;
 
-    [Header("Movement")]
-    public float CrossingChance = 0.5f;
-    public float CrossingSpeed = 1.5f;
+    [Header("Crossing Behavior")]
+    [Range(0f, 1f)] public float CrossingChance = 0.3f;
+    public float CrossingSpeedMultiplier = 1f;
     public float RoadCenterOffset = 0f;
+    public float SidewalkOffset = 1.5f;  // Extra offset from road edge for spawning
+
+    [Header("Crossing Visual")]
+    public bool RotateToCrossingDirection = true;
   }
 
   #endregion
@@ -398,6 +410,7 @@ namespace Code.Gameplay.Features.Pedestrian
     public PedestrianFeature(ISystemFactory systems)
     {
       Add(systems.Create<PedestrianSpawnSystem>());
+      Add(systems.Create<PedestrianCrossingSystem>());
       Add(systems.Create<PedestrianDespawnSystem>());
     }
   }
@@ -477,7 +490,6 @@ namespace Code.Gameplay.Features.Pedestrian
 
     private void SpawnPedestrian(Vector3 heroPosition)
     {
-      // Select random kind using factory (respects config weights)
       PedestrianKind kind = _factory.SelectRandomKind();
       PedestrianVisualData visualData = _factory.GetVisualData(kind);
 
@@ -486,17 +498,42 @@ namespace Code.Gameplay.Features.Pedestrian
       entity.AddPedestrianType(kind);
       entity.AddId(_identifiers.Next());
 
+      float centerX = _spawnPoint != null ? _spawnPoint.Position.x : 0f;
+      centerX += _settings.RoadCenterOffset;
+      float halfRoadWidth = _runnerSettings.RoadWidth * 0.5f;
+
       Vector3 position = heroPosition;
       position.z += _settings.SpawnDistanceAhead;
 
-      float halfWidth = Mathf.Max(0f, _runnerSettings.RoadWidth * 0.5f - _settings.LateralMargin);
-      float centerX = _spawnPoint != null ? _spawnPoint.Position.x : 0f;
-      centerX += _settings.RoadCenterOffset;
-      position.x = centerX + UnityEngine.Random.Range(-halfWidth, halfWidth);
+      // Determine if this pedestrian will cross the road
+      bool isCrossing = UnityEngine.Random.value < _settings.CrossingChance;
+
+      if (isCrossing)
+      {
+        // Crossing pedestrian: spawn at sidewalk, target opposite side
+        bool startFromLeft = UnityEngine.Random.value < 0.5f;
+
+        float sidewalkOffset = halfRoadWidth + _settings.SidewalkOffset;
+        float startX = centerX + (startFromLeft ? -sidewalkOffset : sidewalkOffset);
+        float targetX = centerX + (startFromLeft ? sidewalkOffset : -sidewalkOffset);
+
+        position.x = startX;
+
+        // Calculate crossing speed based on type
+        float crossingSpeed = visualData.BaseSpeed * _settings.CrossingSpeedMultiplier;
+
+        entity.AddCrossingPedestrian(startX, targetX, crossingSpeed, !startFromLeft);
+      }
+      else
+      {
+        // Regular pedestrian: spawn randomly on the road
+        float spawnWidth = halfRoadWidth - _settings.LateralMargin;
+        position.x = centerX + UnityEngine.Random.Range(-spawnWidth, spawnWidth);
+      }
 
       entity.AddWorldPosition(position);
 
-      // Try to use prefab if available, otherwise factory will create visual
+      // Create visual
       EntityBehaviour prefab = SelectPrefabForKind(kind);
       if (prefab != null)
       {
@@ -504,30 +541,27 @@ namespace Code.Gameplay.Features.Pedestrian
       }
       else
       {
-        // Create visual directly using factory
         GameObject visual = _factory.CreatePedestrianVisual(kind, position);
+
+        // Rotate crossing pedestrians to face their direction
+        if (isCrossing && _settings.RotateToCrossingDirection)
+        {
+          bool movingRight = entity.crossingPedestrian.MovingRight;
+          visual.transform.rotation = Quaternion.Euler(
+            visualData.ForwardTilt,
+            movingRight ? 90f : -90f,
+            0f
+          );
+        }
+
         EntityBehaviour entityBehaviour = visual.AddComponent<EntityBehaviour>();
         entity.AddView(entityBehaviour);
         entityBehaviour.SetEntity(entity);
-      }
-
-      // Apply crossing movement with type-specific speed
-      float crossingChance = Mathf.Clamp01(_settings.CrossingChance);
-      if (UnityEngine.Random.value < crossingChance)
-      {
-        float speed = visualData.BaseSpeed;
-        if (speed > 0f)
-        {
-          float sign = UnityEngine.Random.value < 0.5f ? -1f : 1f;
-          entity.AddMoveDirection(Vector3.right * sign);
-          entity.AddMoveSpeed(speed);
-        }
       }
     }
 
     private EntityBehaviour SelectPrefabForKind(PedestrianKind kind)
     {
-      // Use legacy prefabs if available
       if (_factory.IsProtected(kind) && _settings.ForbiddenPrefab != null)
         return _settings.ForbiddenPrefab;
 
@@ -535,6 +569,85 @@ namespace Code.Gameplay.Features.Pedestrian
         return _settings.TargetPrefab;
 
       return null;
+    }
+  }
+
+  public class PedestrianCrossingSystem : IExecuteSystem
+  {
+    private readonly ITimeService _time;
+    private readonly PedestrianSpawnSettings _settings;
+    private readonly IGroup<GameEntity> _crossingPedestrians;
+    private readonly List<GameEntity> _buffer = new(16);
+
+    public PedestrianCrossingSystem(
+      GameContext game,
+      ITimeService time,
+      PedestrianSpawnSettings settings)
+    {
+      _time = time;
+      _settings = settings;
+      _crossingPedestrians = game.GetGroup(
+        GameMatcher.AllOf(GameMatcher.Pedestrian, GameMatcher.CrossingPedestrian, GameMatcher.WorldPosition)
+      );
+    }
+
+    public void Execute()
+    {
+      float dt = _time.DeltaTime;
+
+      foreach (GameEntity pedestrian in _crossingPedestrians.GetEntities(_buffer))
+      {
+        float startX = pedestrian.crossingPedestrian.StartX;
+        float targetX = pedestrian.crossingPedestrian.TargetX;
+        float speed = pedestrian.crossingPedestrian.Speed;
+        bool movingRight = pedestrian.crossingPedestrian.MovingRight;
+
+        Vector3 pos = pedestrian.worldPosition.Value;
+
+        // Move towards target
+        float direction = movingRight ? 1f : -1f;
+        float movement = speed * dt * direction;
+        pos.x += movement;
+
+        // Check if reached target
+        bool reachedTarget = movingRight
+          ? pos.x >= targetX
+          : pos.x <= targetX;
+
+        if (reachedTarget)
+        {
+          // Snap to target and remove crossing component
+          pos.x = targetX;
+          pedestrian.RemoveCrossingPedestrian();
+
+          // Optionally rotate back to face forward
+          if (_settings.RotateToCrossingDirection && pedestrian.hasView)
+          {
+            IEntityView view = pedestrian.view.Value;
+            if (view is Component comp)
+            {
+              // Get pedestrian visual data for forward tilt
+              float tilt = 0f;
+              if (pedestrian.hasPedestrianType)
+              {
+                PedestrianVisualData data = PedestrianVisualData.Default(pedestrian.pedestrianType.Value);
+                tilt = data.ForwardTilt;
+              }
+              comp.transform.rotation = Quaternion.Euler(tilt, 0f, 0f);
+            }
+          }
+        }
+
+        pedestrian.ReplaceWorldPosition(pos);
+
+        // Update view position
+        if (pedestrian.hasView)
+        {
+          IEntityView view = pedestrian.view.Value;
+          if (view is Component comp)
+            comp.transform.position = pos;
+        }
+      }
     }
   }
 
