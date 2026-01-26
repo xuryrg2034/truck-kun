@@ -165,28 +165,26 @@ namespace Code.Meta.Upgrades
 
   public class UpgradeService : IUpgradeService
   {
-    private const string UpgradesPrefsKey = "PlayerUpgrades";
-
     private readonly MetaContext _meta;
-    private readonly IMoneyService _moneyService;
     private readonly UpgradeConfig _config;
+    private readonly Code.Infrastructure.GameStateService _gameState;
 
     private Dictionary<UpgradeType, int> _levels;
 
     public UpgradeService(
       MetaContext meta,
-      IMoneyService moneyService,
       [InjectOptional] UpgradeConfig config = null)
     {
       _meta = meta;
-      _moneyService = moneyService;
       _config = config;
+      _gameState = Code.Infrastructure.GameStateService.Instance;
       _levels = new Dictionary<UpgradeType, int>();
     }
 
     public void Initialize()
     {
-      LoadFromPlayerPrefs();
+      // Load from GameStateService
+      _levels = new Dictionary<UpgradeType, int>(_gameState.GetAllUpgradeLevels());
 
       if (!_meta.hasUpgradesData)
       {
@@ -194,7 +192,8 @@ namespace Code.Meta.Upgrades
       }
       else
       {
-        _levels = new Dictionary<UpgradeType, int>(_meta.upgradesData.Levels);
+        // Sync meta with GameState (GameState is authoritative)
+        _meta.ReplaceUpgradesData(new Dictionary<UpgradeType, int>(_levels));
       }
     }
 
@@ -212,12 +211,15 @@ namespace Code.Meta.Upgrades
       if (cost < 0)
         return false;
 
-      if (!_moneyService.SpendMoney(cost))
+      // Use GameStateService for money operations to avoid circular dependency
+      if (!_gameState.SpendMoney(cost))
         return false;
 
       _levels[type] = currentLevel + 1;
+      _gameState.SetUpgradeLevel(type, currentLevel + 1);
+
       SyncToMeta();
-      SaveToPlayerPrefs();
+      _gameState.Save();
 
       return true;
     }
@@ -279,20 +281,12 @@ namespace Code.Meta.Upgrades
 
     public void SaveToPlayerPrefs()
     {
-      string json = SerializeUpgrades();
-      PlayerPrefs.SetString(UpgradesPrefsKey, json);
-      PlayerPrefs.Save();
+      _gameState.Save();
     }
 
     public void LoadFromPlayerPrefs()
     {
-      _levels.Clear();
-
-      string json = PlayerPrefs.GetString(UpgradesPrefsKey, "");
-      if (!string.IsNullOrEmpty(json))
-      {
-        DeserializeUpgrades(json);
-      }
+      _levels = new Dictionary<UpgradeType, int>(_gameState.GetAllUpgradeLevels());
     }
 
     private UpgradeDefinition GetDefinition(UpgradeType type)
@@ -331,32 +325,6 @@ namespace Code.Meta.Upgrades
     private void SyncToMeta()
     {
       _meta.ReplaceUpgradesData(new Dictionary<UpgradeType, int>(_levels));
-    }
-
-    private string SerializeUpgrades()
-    {
-      // Simple format: "SpeedBoost:1,Maneuverability:2,MoneyMultiplier:0"
-      List<string> parts = new();
-      foreach (var kvp in _levels)
-      {
-        parts.Add($"{kvp.Key}:{kvp.Value}");
-      }
-      return string.Join(",", parts);
-    }
-
-    private void DeserializeUpgrades(string json)
-    {
-      string[] parts = json.Split(',');
-      foreach (string part in parts)
-      {
-        string[] kv = part.Split(':');
-        if (kv.Length == 2 &&
-            Enum.TryParse(kv[0], out UpgradeType type) &&
-            int.TryParse(kv[1], out int level))
-        {
-          _levels[type] = level;
-        }
-      }
     }
   }
 
