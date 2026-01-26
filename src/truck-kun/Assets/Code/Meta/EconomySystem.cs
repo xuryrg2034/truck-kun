@@ -1,14 +1,40 @@
+using Code.Balance;
 using Code.Infrastructure;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace Code.Meta.Economy
 {
+  /// <summary>
+  /// Economy constants that can be overridden by GameBalance
+  /// </summary>
   public static class EconomyConstants
   {
-    public const int DailyFoodCost = 100;
-    public const int StartingMoney = 1000;
-    public const int MinimumRequiredMoney = 100;
+    // Default values (used if GameBalance not loaded)
+    private const int DefaultDailyFoodCost = 100;
+    private const int DefaultStartingMoney = 1000;
+    private const int DefaultMinimumRequired = 100;
+
+    private static GameBalance _cachedBalance;
+
+    private static GameBalance Balance
+    {
+      get
+      {
+        if (_cachedBalance == null)
+          _cachedBalance = Resources.Load<GameBalance>("GameBalance");
+        return _cachedBalance;
+      }
+    }
+
+    public static int DailyFoodCost =>
+      Balance != null ? Balance.Economy.DailyFoodCost : DefaultDailyFoodCost;
+
+    public static int StartingMoney =>
+      Balance != null ? Balance.Economy.StartingMoney : DefaultStartingMoney;
+
+    public static int MinimumRequiredMoney =>
+      Balance != null ? Balance.Economy.MinimumRequiredMoney : DefaultMinimumRequired;
   }
 
   /// <summary>

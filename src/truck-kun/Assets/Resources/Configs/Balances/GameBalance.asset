@@ -1,0 +1,124 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4f25223e341fa14cbaf86c978d7e585, type: 3}
+  m_Name: GameBalance
+  m_EditorClassIdentifier: Assembly-CSharp::Code.Balance.GameBalance
+  Movement:
+    ForwardSpeed: 5
+    LateralSpeed: 5
+    RoadWidth: 6
+    HitRadius: 1.2
+  Pedestrians:
+    SpawnInterval: 1.5
+    SpawnDistanceAhead: 18
+    DespawnDistanceBehind: 12
+    MaxActive: 12
+    LateralMargin: 0.5
+    CrossingChance: 0.3
+    CrossingSpeedMultiplier: 1
+    SidewalkOffset: 1.5
+    TypeBalances:
+    - Kind: 0
+      SpawnWeight: 0.25
+      Speed: 2
+      Scale: 0.85
+      Color: {r: 1, g: 1, b: 1, a: 1}
+      ForwardTilt: 0
+    - Kind: 1
+      SpawnWeight: 0.3
+      Speed: 1.8
+      Scale: 1
+      Color: {r: 1, g: 1, b: 1, a: 1}
+      ForwardTilt: 0
+    - Kind: 2
+      SpawnWeight: 0.15
+      Speed: 0.8
+      Scale: 0.8
+      Color: {r: 1, g: 1, b: 1, a: 1}
+      ForwardTilt: 0
+    - Kind: 3
+      SpawnWeight: 0.1
+      Speed: 0.9
+      Scale: 0.9
+      Color: {r: 1, g: 1, b: 1, a: 1}
+      ForwardTilt: 0
+    - Kind: 4
+      SpawnWeight: 0.2
+      Speed: 2.2
+      Scale: 0.95
+      Color: {r: 1, g: 1, b: 1, a: 1}
+      ForwardTilt: 0
+  Economy:
+    StartingMoney: 1000
+    DailyFoodCost: 100
+    MinimumRequiredMoney: 100
+    ViolationPenalty: 100
+    BaseQuestReward: 50
+    RewardPerTarget: 10
+  Day:
+    DurationSeconds: 60
+    MinQuestsPerDay: 1
+    MaxQuestsPerDay: 1
+    QuestTargets:
+    - Kind: 0
+      MinCount: 3
+      MaxCount: 5
+      BaseReward: 100
+    - Kind: 1
+      MinCount: 2
+      MaxCount: 4
+      BaseReward: 120
+    - Kind: 4
+      MinCount: 3
+      MaxCount: 6
+      BaseReward: 80
+  Upgrades:
+    Upgrades:
+    - Type: 0
+      Name: Speed Boost
+      NameRu: "\u0424\u043E\u0440\u0441\u0430\u0436"
+      MaxLevel: 3
+      Costs: f4010000e8030000d0070000
+      Bonuses:
+      - 0.1
+      - 0.2
+      - 0.3
+    - Type: 1
+      Name: Maneuverability
+      NameRu: "\u041C\u0430\u043D\u0435\u0432\u0440\u0435\u043D\u043D\u043E\u0441\u0442\u044C"
+      MaxLevel: 3
+      Costs: f4010000e8030000d0070000
+      Bonuses:
+      - 0.15
+      - 0.3
+      - 0.45
+    - Type: 2
+      Name: Greed
+      NameRu: "\u0416\u0430\u0434\u043D\u043E\u0441\u0442\u044C"
+      MaxLevel: 3
+      Costs: f4010000e8030000d0070000
+      Bonuses:
+      - 0.2
+      - 0.4
+      - 0.6
+  Feedback:
+    ParticleBurstCount: 15
+    ParticleLifetime: 1
+    ParticleSpeed: 3
+    ParticleGravity: 2
+    ParticleSize: 0.15
+    FloatSpeed: 2
+    FloatDuration: 1.2
+    FontSize: 32
+    SFXVolume: 0.7
+    RewardColor: {r: 0.2, g: 1, b: 0.3, a: 1}
+    PenaltyColor: {r: 1, g: 0.3, b: 0.2, a: 1}

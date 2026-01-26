@@ -1,3 +1,4 @@
+using Code.Balance;
 using Code.Common;
 using Code.Gameplay;
 using Code.Gameplay.Features.Collision;
@@ -21,9 +22,15 @@ namespace Code.Infrastructure
 {
   public class EcsBootstrap : MonoBehaviour
   {
+    [Header("Core")]
     [SerializeField] private InputActionAsset _inputActions;
     [SerializeField] private Transform _heroSpawn;
     [SerializeField] private EntityBehaviour _heroViewPrefab;
+
+    [Header("Centralized Balance (Recommended)")]
+    [SerializeField] private GameBalance _gameBalance;
+
+    [Header("Legacy Settings (Used if GameBalance is null)")]
     [SerializeField] private RunnerMovementSettings _runnerMovement = new RunnerMovementSettings();
     [SerializeField] private DaySessionSettings _daySessionSettings = new DaySessionSettings();
     [SerializeField] private PedestrianSpawnSettings _pedestrianSpawnSettings = new PedestrianSpawnSettings();
@@ -34,6 +41,8 @@ namespace Code.Infrastructure
     [SerializeField] private EconomySettings _economySettings = new EconomySettings();
     [SerializeField] private FeedbackSettings _feedbackSettings = new FeedbackSettings();
     [SerializeField] private UpgradeConfig _upgradeConfig;
+
+    private IBalanceProvider _balanceProvider;
 
     private DiContainer _container;
     private BattleFeature _battleFeature;
@@ -54,6 +63,9 @@ namespace Code.Infrastructure
         enabled = false;
         return;
       }
+
+      // Initialize balance provider
+      InitializeBalance();
 
       // Load persistent state
       GameStateService gameState = GameStateService.Instance;
@@ -106,6 +118,12 @@ namespace Code.Infrastructure
 
       _container.Bind<IIdentifierService>().To<IdentifierService>().AsSingle();
       _container.Bind<ITimeService>().To<UnityTimeService>().AsSingle();
+
+      // Bind balance provider
+      if (_balanceProvider != null)
+        _container.BindInstance(_balanceProvider).AsSingle();
+      else
+        _container.Bind<IBalanceProvider>().To<BalanceProvider>().AsSingle();
 
       if (_runnerMovement == null)
         _runnerMovement = new RunnerMovementSettings();
@@ -171,6 +189,76 @@ namespace Code.Infrastructure
       _container.Bind<IUpgradeService>().To<UpgradeService>().AsSingle();
 
       _container.Bind<ISystemFactory>().To<SystemFactory>().AsSingle();
+    }
+
+    private void InitializeBalance()
+    {
+      // Try to use GameBalance if assigned, otherwise try to load from Resources
+      if (_gameBalance == null)
+        _gameBalance = Resources.Load<GameBalance>("GameBalance");
+
+      if (_gameBalance != null)
+      {
+        _balanceProvider = new BalanceProvider(_gameBalance);
+        ApplyBalanceToSettings();
+        Debug.Log("[EcsBootstrap] Using centralized GameBalance");
+      }
+      else
+      {
+        _balanceProvider = new BalanceProvider();
+        Debug.Log("[EcsBootstrap] Using legacy settings (GameBalance not found)");
+      }
+    }
+
+    private void ApplyBalanceToSettings()
+    {
+      if (_balanceProvider == null)
+        return;
+
+      GameBalance balance = _balanceProvider.Balance;
+
+      // Apply Movement settings
+      _runnerMovement.ForwardSpeed = balance.Movement.ForwardSpeed;
+      _runnerMovement.LateralSpeed = balance.Movement.LateralSpeed;
+      _runnerMovement.RoadWidth = balance.Movement.RoadWidth;
+
+      // Apply Collision settings
+      _collisionSettings.HitRadius = balance.Movement.HitRadius;
+
+      // Apply Pedestrian settings
+      _pedestrianSpawnSettings.SpawnInterval = balance.Pedestrians.SpawnInterval;
+      _pedestrianSpawnSettings.SpawnDistanceAhead = balance.Pedestrians.SpawnDistanceAhead;
+      _pedestrianSpawnSettings.DespawnDistanceBehind = balance.Pedestrians.DespawnDistanceBehind;
+      _pedestrianSpawnSettings.MaxActive = balance.Pedestrians.MaxActive;
+      _pedestrianSpawnSettings.LateralMargin = balance.Pedestrians.LateralMargin;
+      _pedestrianSpawnSettings.CrossingChance = balance.Pedestrians.CrossingChance;
+      _pedestrianSpawnSettings.CrossingSpeedMultiplier = balance.Pedestrians.CrossingSpeedMultiplier;
+      _pedestrianSpawnSettings.SidewalkOffset = balance.Pedestrians.SidewalkOffset;
+
+      // Apply Day settings
+      _daySessionSettings.DurationSeconds = balance.Day.DurationSeconds;
+
+      // Apply Quest settings
+      _questSettings.MinQuestsPerDay = balance.Day.MinQuestsPerDay;
+      _questSettings.MaxQuestsPerDay = balance.Day.MaxQuestsPerDay;
+
+      // Apply Economy settings
+      _economySettings.StartingMoney = balance.Economy.StartingMoney;
+      _economySettings.ViolationPenalty = balance.Economy.ViolationPenalty;
+      _economySettings.BaseQuestReward = balance.Economy.BaseQuestReward;
+
+      // Apply Feedback settings
+      _feedbackSettings.ParticleBurstCount = balance.Feedback.ParticleBurstCount;
+      _feedbackSettings.ParticleLifetime = balance.Feedback.ParticleLifetime;
+      _feedbackSettings.ParticleSpeed = balance.Feedback.ParticleSpeed;
+      _feedbackSettings.ParticleGravity = balance.Feedback.ParticleGravity;
+      _feedbackSettings.ParticleSize = balance.Feedback.ParticleSize;
+      _feedbackSettings.FloatSpeed = balance.Feedback.FloatSpeed;
+      _feedbackSettings.FloatDuration = balance.Feedback.FloatDuration;
+      _feedbackSettings.FontSize = balance.Feedback.FontSize;
+      _feedbackSettings.SFXVolume = balance.Feedback.SFXVolume;
+      _feedbackSettings.RewardColor = balance.Feedback.RewardColor;
+      _feedbackSettings.PenaltyColor = balance.Feedback.PenaltyColor;
     }
 
     private void Update()

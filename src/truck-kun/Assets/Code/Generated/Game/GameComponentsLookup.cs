@@ -18,11 +18,12 @@ public static class GameComponentsLookup {
     public const int Hero = 7;
     public const int MoveDirection = 8;
     public const int MoveSpeed = 9;
-    public const int Pedestrian = 10;
-    public const int PedestrianType = 11;
-    public const int ViolationEvent = 12;
+    public const int CrossingPedestrian = 10;
+    public const int Pedestrian = 11;
+    public const int PedestrianType = 12;
+    public const int ViolationEvent = 13;
 
-    public const int TotalComponents = 13;
+    public const int TotalComponents = 14;
 
     public static readonly string[] componentNames = {
         "Id",
@@ -35,6 +36,7 @@ public static class GameComponentsLookup {
         "Hero",
         "MoveDirection",
         "MoveSpeed",
+        "CrossingPedestrian",
         "Pedestrian",
         "PedestrianType",
         "ViolationEvent"
@@ -51,6 +53,7 @@ public static class GameComponentsLookup {
         typeof(Code.Gameplay.Features.Hero.Hero),
         typeof(Code.Gameplay.Features.Movement.MoveDirection),
         typeof(Code.Gameplay.Features.Movement.MoveSpeed),
+        typeof(Code.Gameplay.Features.Pedestrian.CrossingPedestrian),
         typeof(Code.Gameplay.Features.Pedestrian.Pedestrian),
         typeof(Code.Gameplay.Features.Pedestrian.PedestrianType),
         typeof(Code.Gameplay.Features.Quest.ViolationEvent)
