@@ -437,6 +437,17 @@ namespace Code.Infrastructure
 
       // Start async load
       AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneName);
+
+      // Check if scene exists
+      if (asyncLoad == null)
+      {
+        Debug.LogError($"[SceneTransition] Failed to load scene '{sceneName}'. Make sure it's added to Build Settings.");
+        HideLoadingScreen();
+        _isTransitioning = false;
+        onComplete?.Invoke();
+        yield break;
+      }
+
       asyncLoad.allowSceneActivation = false;
 
       // Update progress
