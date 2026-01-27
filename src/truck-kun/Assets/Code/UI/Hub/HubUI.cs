@@ -60,7 +60,8 @@ namespace Code.UI.Hub
       canvasObj.AddComponent<GraphicRaycaster>();
 
       // Background
-      CreateBackground(canvasObj.transform);
+      // CreateBackground(canvasObj.transform);
+      
 
       // Header
       CreateHeader(canvasObj.transform);
@@ -72,37 +73,37 @@ namespace Code.UI.Hub
       CreateFooter(canvasObj.transform);
     }
 
-    private void CreateBackground(Transform parent)
-    {
-      GameObject bgObj = new GameObject("Background");
-      bgObj.transform.SetParent(parent, false);
-      bgObj.transform.SetAsFirstSibling();
-
-      Image bgImage = bgObj.AddComponent<Image>();
-
-      // Create gradient texture
-      Texture2D gradientTex = new Texture2D(1, 256);
-      for (int y = 0; y < 256; y++)
-      {
-        float t = y / 255f;
-        Color color = Color.Lerp(
-          new Color(0.03f, 0.02f, 0.05f),
-          new Color(0.1f, 0.06f, 0.14f),
-          t
-        );
-        gradientTex.SetPixel(0, y, color);
-      }
-      gradientTex.Apply();
-
-      bgImage.sprite = Sprite.Create(gradientTex, new Rect(0, 0, 1, 256), new Vector2(0.5f, 0.5f));
-      bgImage.type = Image.Type.Sliced;
-
-      RectTransform bgRect = bgObj.GetComponent<RectTransform>();
-      bgRect.anchorMin = Vector2.zero;
-      bgRect.anchorMax = Vector2.one;
-      bgRect.offsetMin = Vector2.zero;
-      bgRect.offsetMax = Vector2.zero;
-    }
+    // private void CreateBackground(Transform parent)
+    // {
+    //   GameObject bgObj = new GameObject("Background");
+    //   bgObj.transform.SetParent(parent, false);
+    //   bgObj.transform.SetAsFirstSibling();
+    //
+    //   Image bgImage = bgObj.AddComponent<Image>();
+    //
+    //   // Create gradient texture
+    //   Texture2D gradientTex = new Texture2D(1, 256);
+    //   for (int y = 0; y < 256; y++)
+    //   {
+    //     float t = y / 255f;
+    //     Color color = Color.Lerp(
+    //       new Color(0.03f, 0.02f, 0.05f),
+    //       new Color(0.1f, 0.06f, 0.14f),
+    //       t
+    //     );
+    //     gradientTex.SetPixel(0, y, color);
+    //   }
+    //   gradientTex.Apply();
+    //
+    //   bgImage.sprite = Sprite.Create(gradientTex, new Rect(0, 0, 1, 256), new Vector2(0.5f, 0.5f));
+    //   bgImage.type = Image.Type.Sliced;
+    //
+    //   RectTransform bgRect = bgObj.GetComponent<RectTransform>();
+    //   bgRect.anchorMin = Vector2.zero;
+    //   bgRect.anchorMax = Vector2.one;
+    //   bgRect.offsetMin = Vector2.zero;
+    //   bgRect.offsetMax = Vector2.zero;
+    // }
 
     private void CreateHeader(Transform parent)
     {
