@@ -7,6 +7,7 @@ using Code.Gameplay.Features.Feedback;
 using Code.Gameplay.Features.Hero;
 using Code.Gameplay.Features.Pedestrian;
 using Code.Gameplay.Features.Quest;
+using Code.Gameplay.Features.Surface;
 using Code.Gameplay.Input;
 using Code.Infrastructure.Systems;
 using Code.Infrastructure.View;
@@ -38,6 +39,7 @@ namespace Code.Infrastructure
     private QuestSettings _questSettings;
     private EconomySettings _economySettings;
     private FeedbackSettings _feedbackSettings;
+    private SurfaceSpawnSettings _surfaceSpawnSettings;
 
     private IBalanceProvider _balanceProvider;
     private IDifficultyService _difficultyService;
@@ -244,6 +246,26 @@ namespace Code.Infrastructure
         RewardColor = balance.Feedback.RewardColor,
         PenaltyColor = balance.Feedback.PenaltyColor
       };
+
+      // Surface hazard settings (manual placement - spawning disabled)
+      _surfaceSpawnSettings = new SurfaceSpawnSettings
+      {
+        EnableSpawning = false,  // Surfaces are placed manually in scene
+        SpawnChance = 0.2f,
+        MinSpawnInterval = 25f,
+        MaxSpawnInterval = 50f,
+        MinLength = 4f,
+        MaxLength = 10f,
+        Width = 2.5f,
+        SpawnDistanceAhead = 60f,
+        DespawnDistanceBehind = 25f,
+        LateralMargin = 0.5f,
+        OilWeight = 1f,
+        GrassWeight = 0.6f,
+        PuddleWeight = 0.8f,
+        IceWeight = 0.1f,
+        HeightOffset = 0.02f
+      };
     }
 
     private void ApplyUpgradesToSettings()
@@ -301,6 +323,7 @@ namespace Code.Infrastructure
       _container.BindInstance(_questSettings).AsSingle();
       _container.BindInstance(_economySettings).AsSingle();
       _container.BindInstance(_feedbackSettings).AsSingle();
+      _container.BindInstance(_surfaceSpawnSettings).AsSingle();
 
       // Day service
       _container.Bind<IDaySessionService>().To<DaySessionService>().AsSingle();

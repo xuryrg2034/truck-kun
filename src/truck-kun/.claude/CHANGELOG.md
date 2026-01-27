@@ -19,6 +19,50 @@
 
 ---
 
+## 2026-01-27 22:15 - Система поверхностей (Oil, Grass, Ice)
+
+**Файлы:**
+- `Assets/Code/Gameplay/SurfaceTrigger.cs` - создан
+- `Assets/Code/Gameplay/SurfaceFeature.cs` - создан
+- `Assets/Code/Gameplay/PhysicsComponents.cs` - добавлен OnSurface
+- `Assets/Code/Gameplay/PhysicsFeature.cs` - улучшен ApplySurfaceModifiersSystem
+- `Assets/Code/Gameplay/BattleFeature.cs` - добавлен SurfaceFeature
+- `Assets/Code/Infrastructure/EcsBootstrap.cs` - добавлены SurfaceSpawnSettings
+
+**Причина:** Разнообразие геймплея через опасные поверхности
+**Детали:**
+
+SurfaceTrigger.cs:
+- MonoBehaviour с OnTriggerEnter/Exit
+- Находит Hero через EntityBehaviour
+- Применяет SurfaceModifier к entity
+- Отслеживание текущей поверхности через OnSurface компонент
+- Визуальные эффекты (particles) при входе
+
+SurfaceFeature.cs:
+- `SurfaceSpawnSystem` - спавн поверхностей впереди героя
+- `SurfaceDespawnSystem` - удаление позади героя
+- `SurfaceFactory` - создание визуала и коллайдеров
+- Weighted random для типов: Oil, Grass, Puddle, Ice
+
+Типы поверхностей:
+| Type   | Friction | Drag | Effect                    |
+|--------|----------|------|---------------------------|
+| Normal | 1.0      | 1.0  | Стандартный               |
+| Oil    | 0.3      | 0.5  | Скользко, скорость та же  |
+| Grass  | 0.8      | 1.8  | Замедление                |
+| Ice    | 0.15     | 0.3  | Очень скользко            |
+| Puddle | 0.85     | 1.3  | Немного скользко          |
+
+ApplySurfaceModifiersSystem:
+- Sliding эффект для низкого friction
+- Drag влияет на forward speed
+- Random drift на очень скользких поверхностях
+
+**Требуется:** Запустить Jenny для генерации OnSurface
+
+---
+
 ## 2026-01-27 21:30 - Переход на физические коллизии
 
 **Файлы:**

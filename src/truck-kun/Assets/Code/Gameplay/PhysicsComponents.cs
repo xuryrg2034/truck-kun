@@ -114,6 +114,16 @@ namespace Code.Gameplay.Features.Physics
     public float DragMultiplier;
   }
 
+  /// <summary>
+  /// Tracks which surface the entity is currently on.
+  /// Used to properly reset surface when exiting.
+  /// </summary>
+  [Game]
+  public class OnSurface : IComponent
+  {
+    public UnityEngine.GameObject SurfaceObject;
+  }
+
   #endregion
 
   #region Constraint Components

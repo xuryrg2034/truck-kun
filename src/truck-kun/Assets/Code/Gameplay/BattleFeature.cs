@@ -6,6 +6,7 @@ using Code.Gameplay.Features.Movement;
 using Code.Gameplay.Features.Pedestrian;
 using Code.Gameplay.Features.Physics;
 using Code.Gameplay.Features.Quest;
+using Code.Gameplay.Features.Surface;
 using Code.Gameplay.Input;
 using Code.Infrastructure.Systems;
 using Code.Infrastructure.View;
@@ -40,6 +41,9 @@ namespace Code.Gameplay
 
       // NPC spawning and AI
       Add(systems.Create<PedestrianFeature>());
+
+      // Surface hazards (oil, grass, etc.)
+      Add(systems.Create<SurfaceFeature>());
 
       // Collision detection
       Add(systems.Create<CollisionFeature>());

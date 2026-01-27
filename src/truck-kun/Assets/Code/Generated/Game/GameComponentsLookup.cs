@@ -23,18 +23,19 @@ public static class GameComponentsLookup {
     public const int Pedestrian = 12;
     public const int PedestrianType = 13;
     public const int Acceleration = 14;
-    public const int PhysicsBody = 15;
-    public const int PhysicsConstraints = 16;
-    public const int PhysicsDrag = 17;
-    public const int PhysicsImpact = 18;
-    public const int PhysicsState = 19;
-    public const int PhysicsVelocity = 20;
-    public const int Rigidbody = 21;
-    public const int SurfaceModifier = 22;
-    public const int SurfaceZone = 23;
-    public const int ViolationEvent = 24;
+    public const int OnSurface = 15;
+    public const int PhysicsBody = 16;
+    public const int PhysicsConstraints = 17;
+    public const int PhysicsDrag = 18;
+    public const int PhysicsImpact = 19;
+    public const int PhysicsState = 20;
+    public const int PhysicsVelocity = 21;
+    public const int Rigidbody = 22;
+    public const int SurfaceModifier = 23;
+    public const int SurfaceZone = 24;
+    public const int ViolationEvent = 25;
 
-    public const int TotalComponents = 25;
+    public const int TotalComponents = 26;
 
     public static readonly string[] componentNames = {
         "Id",
@@ -52,6 +53,7 @@ public static class GameComponentsLookup {
         "Pedestrian",
         "PedestrianType",
         "Acceleration",
+        "OnSurface",
         "PhysicsBody",
         "PhysicsConstraints",
         "PhysicsDrag",
@@ -80,6 +82,7 @@ public static class GameComponentsLookup {
         typeof(Code.Gameplay.Features.Pedestrian.Pedestrian),
         typeof(Code.Gameplay.Features.Pedestrian.PedestrianType),
         typeof(Code.Gameplay.Features.Physics.Acceleration),
+        typeof(Code.Gameplay.Features.Physics.OnSurface),
         typeof(Code.Gameplay.Features.Physics.PhysicsBody),
         typeof(Code.Gameplay.Features.Physics.PhysicsConstraints),
         typeof(Code.Gameplay.Features.Physics.PhysicsDrag),

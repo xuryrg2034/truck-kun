@@ -280,60 +280,78 @@ namespace Code.Gameplay.Features.Physics
   /// Applies surface modifiers to velocity.
   /// Different surfaces affect lateral control and drag.
   ///
-  /// Normal: No modification
-  /// Oil: Reduced lateral friction (slides more)
-  /// Ice: Very reduced friction (very slippery)
-  /// Grass: Increased drag (slower, but more grip)
+  /// Effects:
+  /// - Friction: Affects lateral control (low = slippery, slides more)
+  /// - Drag: Affects forward speed (high = slower)
+  ///
+  /// Surface types:
+  /// - Normal: No modification
+  /// - Oil: Low friction (0.3), low drag - slides but maintains speed
+  /// - Grass: Normal friction, high drag (1.8) - slows down
+  /// - Ice: Very low friction (0.15), low drag - extremely slippery
+  /// - Puddle: Slight friction reduction, moderate drag
   /// </summary>
   public class ApplySurfaceModifiersSystem : IExecuteSystem
   {
     private readonly IGroup<GameEntity> _entities;
     private readonly List<GameEntity> _buffer = new(4);
+    private float _lastLogTime;
+
+    // Store previous lateral velocity to implement sliding
+    private readonly Dictionary<int, float> _previousLateralVelocity = new();
 
     public ApplySurfaceModifiersSystem(GameContext game)
     {
       _entities = game.GetGroup(GameMatcher.AllOf(
         GameMatcher.PhysicsVelocity,
         GameMatcher.SurfaceModifier,
-        GameMatcher.PhysicsDrag));
+        GameMatcher.PhysicsDrag,
+        GameMatcher.Id));
     }
 
     public void Execute()
     {
+      float dt = Time.fixedDeltaTime;
+
       foreach (GameEntity entity in _entities.GetEntities(_buffer))
       {
         Vector3 velocity = entity.physicsVelocity.Value;
         SurfaceModifier surface = entity.surfaceModifier;
         PhysicsDrag drag = entity.physicsDrag;
+        int entityId = entity.id.Value;
+
+        // Get previous lateral velocity for sliding calculation
+        if (!_previousLateralVelocity.TryGetValue(entityId, out float prevLateralVel))
+          prevLateralVel = velocity.x;
 
         // === FRICTION EFFECT ON LATERAL CONTROL ===
-        // Low friction = harder to change direction (slides in current direction)
-        // High friction = easier to control
-        //
-        // Implementation: Interpolate towards target lateral based on friction
-        // friction = 1.0: instant response
-        // friction = 0.3 (oil): slow response, keeps sliding
-        // friction = 0.15 (ice): very slow response
-
-        // We modify how quickly lateral velocity responds
-        // This is already handled by acceleration, but surface affects the "grip"
-        // For low friction, we reduce the lateral velocity change rate
-
-        // Apply inverse friction to lateral (low friction = more sliding)
-        // This creates a "drift" effect on slippery surfaces
+        // Low friction means the truck "slides" - it keeps moving laterally
+        // even when trying to change direction
         if (surface.FrictionMultiplier < 1f)
         {
-          // On slippery surfaces, lateral velocity is harder to control
-          // We add a slight "momentum preservation" effect
-          // (Actual implementation would need previous velocity tracking)
+          float friction = surface.FrictionMultiplier;
 
-          // For now, we reduce lateral acceleration effectiveness
-          // by scaling the lateral component towards a "sliding" value
-          // This is a simplified approach
+          // Blend between desired velocity and previous velocity based on friction
+          // Low friction = more influence from previous velocity (sliding)
+          // friction 1.0 = 100% control, friction 0.3 = 30% control
+          float slideAmount = 1f - friction;
+
+          // Current velocity.x is the "desired" lateral velocity
+          // prevLateralVel is where we were sliding
+          float slidingVelocity = Mathf.Lerp(velocity.x, prevLateralVel, slideAmount * 0.8f);
+
+          // Add slight random drift on very slippery surfaces
+          if (friction < 0.4f)
+          {
+            float drift = (Mathf.PerlinNoise(Time.time * 2f, entityId) - 0.5f) * 0.5f;
+            slidingVelocity += drift * (1f - friction);
+          }
+
+          velocity.x = slidingVelocity;
         }
 
-        // === DRAG EFFECT ===
-        // Update current drag based on surface
+        // === DRAG EFFECT ON FORWARD SPEED ===
+        // Update current drag value
         float newCurrentDrag = drag.BaseDrag * surface.DragMultiplier;
 
         if (Mathf.Abs(newCurrentDrag - drag.CurrentDrag) > 0.001f)
@@ -341,15 +359,54 @@ namespace Code.Gameplay.Features.Physics
           entity.ReplacePhysicsDrag(drag.BaseDrag, newCurrentDrag);
         }
 
-        // Apply drag to velocity (reduces speed over time)
-        // Note: Only apply if drag modifier is > 1 (surfaces that slow you down)
-        if (surface.DragMultiplier > 1f)
+        // Apply drag to forward velocity
+        // High drag = surface slows you down (grass, mud)
+        // Low drag = maintains speed (ice, oil)
+        if (surface.DragMultiplier != 1f)
         {
-          float dragFactor = 1f - (newCurrentDrag * 0.1f * Time.fixedDeltaTime);
-          dragFactor = Mathf.Max(dragFactor, 0.9f); // Don't slow down too much
+          float dragEffect = surface.DragMultiplier;
 
-          velocity.z *= dragFactor;
-          entity.ReplacePhysicsVelocity(velocity);
+          if (dragEffect > 1f)
+          {
+            // High drag - STRONG slowdown effect
+            // dragEffect 2.0 = reduce speed by ~50% per second
+            // dragEffect 5.0 = reduce speed by ~80% per second (almost stop)
+            // dragEffect 10.0 = almost instant stop
+            float slowdownRate = (dragEffect - 1f) * 2f; // Much stronger effect
+            float slowdownFactor = 1f - (slowdownRate * dt);
+            slowdownFactor = Mathf.Max(slowdownFactor, 0.5f); // Allow up to 50% reduction per frame
+
+            velocity.z *= slowdownFactor;
+
+            // Clamp minimum speed so truck doesn't completely stop
+            float minSpeed = 0.5f; // Minimum forward speed on high drag surfaces
+            if (velocity.z < minSpeed && entity.hasPhysicsConstraints)
+            {
+              // Allow near-stop on very high drag
+              velocity.z = Mathf.Max(velocity.z, dragEffect > 5f ? 0.1f : minSpeed);
+            }
+          }
+          else
+          {
+            // Low drag - slight speed boost on slippery surfaces
+            float boostFactor = 1f + ((1f - dragEffect) * 0.1f * dt);
+            boostFactor = Mathf.Min(boostFactor, 1.02f);
+            velocity.z *= boostFactor;
+          }
+        }
+
+        // Store for next frame
+        _previousLateralVelocity[entityId] = velocity.x;
+
+        // Apply modified velocity
+        entity.ReplacePhysicsVelocity(velocity);
+
+        // Debug logging for non-normal surfaces
+        if (surface.SurfaceType != SurfaceType.Normal && Time.time - _lastLogTime > 1f)
+        {
+          _lastLogTime = Time.time;
+          Debug.Log($"[Surface] {surface.SurfaceType}: friction={surface.FrictionMultiplier:F2}, " +
+                    $"drag={surface.DragMultiplier:F2}, vel={velocity}");
         }
       }
     }
