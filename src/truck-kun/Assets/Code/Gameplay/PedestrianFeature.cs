@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Code.Art;
 using Code.Balance;
 using Code.Common;
 using Code.Gameplay.Features.Hero;
@@ -59,6 +60,11 @@ namespace Code.Gameplay.Features.Pedestrian
   [Serializable]
   public class PedestrianVisualData
   {
+    [Header("Prefab (drag and drop)")]
+    [Tooltip("Optional prefab to use. If not set, procedural model will be generated.")]
+    public GameObject Prefab;
+
+    [Header("Settings")]
     public PedestrianKind Kind;
     public Color Color = Color.white;
     public float Scale = 1f;
@@ -339,7 +345,70 @@ namespace Code.Gameplay.Features.Pedestrian
       kind = MapLegacyKind(kind);
       PedestrianVisualData data = GetVisualData(kind);
 
-      // Create capsule
+      // If prefab is assigned, use it
+      if (data.Prefab != null)
+      {
+        return CreateFromPrefab(data, position);
+      }
+
+      // Otherwise, use procedural generation from ProceduralMeshGenerator if available
+      GameObject proceduralModel = TryCreateProceduralModel(kind, position);
+      if (proceduralModel != null)
+      {
+        proceduralModel.name = $"Pedestrian_{data.DisplayName}";
+        proceduralModel.transform.localScale = Vector3.one * data.Scale;
+        return proceduralModel;
+      }
+
+      // Fallback: create capsule
+      return CreateFallbackCapsule(data, position);
+    }
+
+    private GameObject CreateFromPrefab(PedestrianVisualData data, Vector3 position)
+    {
+      GameObject pedestrian = UnityEngine.Object.Instantiate(data.Prefab, position, Quaternion.identity);
+      pedestrian.name = $"Pedestrian_{data.DisplayName}";
+
+      // Apply scale
+      pedestrian.transform.localScale = Vector3.one * data.Scale;
+
+      // Apply rotation (forward tilt)
+      pedestrian.transform.rotation = Quaternion.Euler(data.ForwardTilt, 0f, 0f);
+
+      // Ensure collider exists for collision detection
+      if (pedestrian.GetComponent<Collider>() == null)
+      {
+        CapsuleCollider collider = pedestrian.AddComponent<CapsuleCollider>();
+        collider.height = 2f;
+        collider.radius = 0.3f;
+        collider.center = new Vector3(0f, 1f, 0f);
+      }
+
+      return pedestrian;
+    }
+
+    private GameObject TryCreateProceduralModel(PedestrianKind kind, Vector3 position)
+    {
+      GameObject result = kind switch
+      {
+        PedestrianKind.StudentNerd => ProceduralMeshGenerator.CreateStudentNerd(),
+        PedestrianKind.Salaryman => ProceduralMeshGenerator.CreateSalaryman(),
+        PedestrianKind.Grandma => ProceduralMeshGenerator.CreateGrandma(),
+        PedestrianKind.OldMan => ProceduralMeshGenerator.CreateGrandma(), // Use grandma model for old man
+        PedestrianKind.Teenager => ProceduralMeshGenerator.CreateStudentNerd(), // Use student model for teenager
+        _ => null
+      };
+
+      if (result != null)
+      {
+        result.transform.position = position;
+      }
+      return result;
+    }
+
+    private GameObject CreateFallbackCapsule(PedestrianVisualData data, Vector3 position)
+    {
+      // Fallback: create capsule
       GameObject pedestrian = GameObject.CreatePrimitive(PrimitiveType.Capsule);
       pedestrian.name = $"Pedestrian_{data.DisplayName}";
       pedestrian.transform.position = position;
