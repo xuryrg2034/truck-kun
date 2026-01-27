@@ -272,15 +272,43 @@ namespace Code.Infrastructure
     {
       GameStateService state = GameStateService.Instance;
 
-      // Apply speed upgrade
+      // Apply speed upgrade (affects forward speed for both kinematic and physics)
       float speedBonus = GetUpgradeBonus(UpgradeType.SpeedBoost, state.GetUpgradeLevel(UpgradeType.SpeedBoost));
       if (speedBonus > 0)
-        _runnerMovement.ForwardSpeed *= (1f + speedBonus);
+      {
+        float multiplier = 1f + speedBonus;
 
-      // Apply maneuverability upgrade
+        // Legacy kinematic speed
+        _runnerMovement.ForwardSpeed *= multiplier;
+
+        // Physics speed limits
+        _runnerMovement.MinForwardSpeed *= multiplier;
+        _runnerMovement.MaxForwardSpeed *= multiplier;
+
+        // Slightly increase acceleration to match higher speeds
+        _runnerMovement.ForwardAcceleration *= (1f + speedBonus * 0.5f);
+
+        Debug.Log($"[Upgrades] SpeedBoost applied: +{speedBonus * 100:F0}% speed");
+      }
+
+      // Apply maneuverability upgrade (affects lateral control)
       float lateralBonus = GetUpgradeBonus(UpgradeType.Maneuverability, state.GetUpgradeLevel(UpgradeType.Maneuverability));
       if (lateralBonus > 0)
-        _runnerMovement.LateralSpeed *= (1f + lateralBonus);
+      {
+        float multiplier = 1f + lateralBonus;
+
+        // Legacy kinematic lateral speed
+        _runnerMovement.LateralSpeed *= multiplier;
+
+        // Physics lateral parameters
+        _runnerMovement.MaxLateralSpeed *= multiplier;
+        _runnerMovement.LateralAcceleration *= multiplier;
+
+        // Better deceleration for improved control
+        _runnerMovement.Deceleration *= (1f + lateralBonus * 0.3f);
+
+        Debug.Log($"[Upgrades] Maneuverability applied: +{lateralBonus * 100:F0}% lateral control");
+      }
 
       // Set starting money from state
       _economySettings.StartingMoney = state.PlayerMoney;
