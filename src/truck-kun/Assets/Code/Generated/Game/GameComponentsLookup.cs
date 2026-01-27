@@ -34,8 +34,9 @@ public static class GameComponentsLookup {
     public const int SurfaceModifier = 23;
     public const int SurfaceZone = 24;
     public const int ViolationEvent = 25;
+    public const int Ragdolled = 26;
 
-    public const int TotalComponents = 26;
+    public const int TotalComponents = 27;
 
     public static readonly string[] componentNames = {
         "Id",
@@ -63,7 +64,8 @@ public static class GameComponentsLookup {
         "Rigidbody",
         "SurfaceModifier",
         "SurfaceZone",
-        "ViolationEvent"
+        "ViolationEvent",
+        "Ragdolled"
     };
 
     public static readonly System.Type[] componentTypes = {
@@ -92,6 +94,7 @@ public static class GameComponentsLookup {
         typeof(Code.Gameplay.Features.Physics.RigidbodyComponent),
         typeof(Code.Gameplay.Features.Physics.SurfaceModifier),
         typeof(Code.Gameplay.Features.Physics.SurfaceZone),
-        typeof(Code.Gameplay.Features.Quest.ViolationEvent)
+        typeof(Code.Gameplay.Features.Quest.ViolationEvent),
+        typeof(Code.Gameplay.Features.Ragdoll.Ragdolled)
     };
 }

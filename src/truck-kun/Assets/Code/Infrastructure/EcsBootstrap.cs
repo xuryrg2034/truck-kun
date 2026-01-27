@@ -7,6 +7,7 @@ using Code.Gameplay.Features.Feedback;
 using Code.Gameplay.Features.Hero;
 using Code.Gameplay.Features.Pedestrian;
 using Code.Gameplay.Features.Quest;
+using Code.Gameplay.Features.Ragdoll;
 using Code.Gameplay.Features.Surface;
 using Code.Gameplay.Input;
 using Code.Infrastructure.Systems;
@@ -40,6 +41,7 @@ namespace Code.Infrastructure
     private EconomySettings _economySettings;
     private FeedbackSettings _feedbackSettings;
     private SurfaceSpawnSettings _surfaceSpawnSettings;
+    private RagdollSettings _ragdollSettings;
 
     private IBalanceProvider _balanceProvider;
     private IDifficultyService _difficultyService;
@@ -266,6 +268,20 @@ namespace Code.Infrastructure
         IceWeight = 0.1f,
         HeightOffset = 0.02f
       };
+
+      // Ragdoll settings for hit pedestrians
+      _ragdollSettings = new RagdollSettings
+      {
+        HitForce = 800f,
+        UpwardForce = 300f,
+        TorqueForce = 200f,
+        DespawnDelay = 2.5f,
+        FadeStartDelay = 1.5f,
+        MaxActiveRagdolls = 5,
+        RagdollDrag = 0.5f,
+        RagdollAngularDrag = 0.5f,
+        EnableFadeOut = true
+      };
     }
 
     private void ApplyUpgradesToSettings()
@@ -352,6 +368,7 @@ namespace Code.Infrastructure
       _container.BindInstance(_economySettings).AsSingle();
       _container.BindInstance(_feedbackSettings).AsSingle();
       _container.BindInstance(_surfaceSpawnSettings).AsSingle();
+      _container.BindInstance(_ragdollSettings).AsSingle();
 
       // Day service
       _container.Bind<IDaySessionService>().To<DaySessionService>().AsSingle();

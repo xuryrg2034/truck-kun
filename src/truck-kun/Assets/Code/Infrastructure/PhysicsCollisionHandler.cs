@@ -58,8 +58,17 @@ namespace Code.Infrastructure.View
       // Create HitEvent with extended data
       CreateHitEvent(pedestrianEntity, impactForce, impactPoint, impactNormal);
 
-      Debug.Log($"[PhysicsCollisionHandler] Hit pedestrian {pedestrianEntity.id.Value} " +
-                $"(type: {pedestrianEntity.pedestrianType.Value}, force: {impactForce:F1})");
+      // Notify debug visualizer
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+      if (Code.DebugTools.DebugPhysicsController.Instance?.Visualizer != null)
+      {
+        Code.DebugTools.DebugPhysicsController.Instance.Visualizer.RegisterCollision(
+          impactPoint, impactForce, pedestrianEntity.pedestrianType.Value.ToString());
+      }
+#endif
+
+      Debug.Log($"<color=red>[COLLISION]</color> Hit {pedestrianEntity.pedestrianType.Value} " +
+                $"at velocity {impactForce:F1} m/s (id: {pedestrianEntity.id.Value})");
     }
 
     /// <summary>

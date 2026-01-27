@@ -6,6 +6,7 @@ using Code.Gameplay.Features.Movement;
 using Code.Gameplay.Features.Pedestrian;
 using Code.Gameplay.Features.Physics;
 using Code.Gameplay.Features.Quest;
+using Code.Gameplay.Features.Ragdoll;
 using Code.Gameplay.Features.Surface;
 using Code.Gameplay.Input;
 using Code.Infrastructure.Systems;
@@ -47,6 +48,9 @@ namespace Code.Gameplay
 
       // Collision detection
       Add(systems.Create<CollisionFeature>());
+
+      // Ragdoll effect for hit pedestrians
+      Add(systems.Create<RagdollFeature>());
 
       // Visual/audio feedback after collision
       Add(systems.Create<FeedbackFeature>());

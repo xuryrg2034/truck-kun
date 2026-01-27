@@ -166,7 +166,8 @@ namespace Code.Gameplay.Features.Collision
 
   /// <summary>
   /// Destroys pedestrians that have been hit.
-  /// Handles view cleanup and entity destruction.
+  /// Only destroys pedestrians that DON'T have Ragdolled component.
+  /// Ragdolled pedestrians are handled by RagdollCleanupSystem.
   /// </summary>
   public class DestroyHitPedestriansSystem : IExecuteSystem
   {
@@ -175,20 +176,21 @@ namespace Code.Gameplay.Features.Collision
 
     public DestroyHitPedestriansSystem(GameContext game)
     {
-      _hitPedestrians = game.GetGroup(GameMatcher.AllOf(GameMatcher.Pedestrian, GameMatcher.Hit));
+      // Only destroy hit pedestrians that are NOT ragdolled
+      // Ragdolled pedestrians are cleaned up by RagdollCleanupSystem after delay
+      _hitPedestrians = game.GetGroup(GameMatcher
+        .AllOf(GameMatcher.Pedestrian, GameMatcher.Hit)
+        .NoneOf(GameMatcher.Ragdolled));
     }
 
     public void Execute()
     {
       foreach (GameEntity pedestrian in _hitPedestrians.GetEntities(_buffer))
       {
+        // Skip if has View - RagdollFeature will handle it
+        // Only destroy entities without view (shouldn't happen normally)
         if (pedestrian.hasView)
-        {
-          IEntityView view = pedestrian.view.Value;
-          view.ReleaseEntity();
-          if (view is Component component)
-            UnityEngine.Object.Destroy(component.gameObject);
-        }
+          continue;
 
         pedestrian.Destroy();
       }
