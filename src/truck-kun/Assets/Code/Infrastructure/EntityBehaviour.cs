@@ -27,18 +27,26 @@ namespace Code.Infrastructure.View
     public void Construct(RunnerMovementSettings movementSettings = null)
     {
       _movementSettings = movementSettings;
+      Debug.Log($"[EntityBehaviour] Construct called, settings: {(_movementSettings != null ? "OK" : "NULL")}");
     }
 
     public void SetEntity(GameEntity entity)
     {
       _entity = entity;
 
+      // Sync initial position from entity's WorldPosition
+      // This is critical because View is instantiated at a temp position
+      if (_entity.hasWorldPosition)
+      {
+        transform.position = _entity.worldPosition.Value;
+      }
+
       // Core bindings
       _entity.AddView(this);
       _entity.Retain(this);
       _entity.AddTransform(transform);
 
-      // Physics bindings
+      // Physics bindings (must be after position sync!)
       BindRigidbody();
     }
 
@@ -46,28 +54,108 @@ namespace Code.Infrastructure.View
     {
       // Check if entity needs physics
       if (_entity == null || !_entity.isPhysicsBody)
+      {
+        Debug.Log($"[EntityBehaviour] BindRigidbody skipped: entity={_entity != null}, isPhysicsBody={_entity?.isPhysicsBody}");
         return;
+      }
 
-      // Get existing Rigidbody or setup new one
+      Debug.Log($"[EntityBehaviour] BindRigidbody starting for physics body");
+
+      // Get existing Rigidbody
       _rigidbody = GetComponent<Rigidbody>();
 
-      if (_rigidbody == null && _movementSettings != null)
+      if (_rigidbody == null)
       {
-        // Setup physics body with proper configuration
-        _rigidbody = HeroRigidbodySetup.SetupPhysicsBody(gameObject, _movementSettings);
+        // No Rigidbody on prefab - create one
+        Debug.Log("[EntityBehaviour] No Rigidbody found, creating...");
+        _rigidbody = CreateRigidbody();
       }
-      else if (_rigidbody != null && _movementSettings != null)
+      else if (_movementSettings != null)
       {
-        // Configure existing Rigidbody
+        // Configure existing Rigidbody with injected settings
+        Debug.Log("[EntityBehaviour] Configuring existing Rigidbody with settings");
         HeroRigidbodySetup.ConfigureRigidbody(_rigidbody, _movementSettings);
+      }
+      else
+      {
+        // Configure existing Rigidbody with defaults
+        Debug.Log("[EntityBehaviour] Configuring existing Rigidbody with defaults");
+        ConfigureRigidbodyDefaults(_rigidbody);
       }
 
       // Bind Rigidbody to entity
       if (_rigidbody != null)
       {
+        // Ensure Rigidbody position matches WorldPosition
+        if (_entity.hasWorldPosition)
+        {
+          _rigidbody.position = _entity.worldPosition.Value;
+          _rigidbody.linearVelocity = Vector3.zero; // Reset any accumulated velocity
+        }
+
         _entity.AddRigidbody(_rigidbody);
-        Debug.Log($"[EntityBehaviour] Bound Rigidbody to entity {_entity.id.Value}");
+        Debug.Log($"[EntityBehaviour] SUCCESS: Bound Rigidbody to entity {_entity.id.Value} at {_rigidbody.position}");
       }
+      else
+      {
+        Debug.LogError("[EntityBehaviour] FAILED: Could not create or find Rigidbody!");
+      }
+    }
+
+    /// <summary>
+    /// Creates and configures a new Rigidbody for physics body
+    /// </summary>
+    private Rigidbody CreateRigidbody()
+    {
+      // Ensure collider exists
+      Collider collider = GetComponent<Collider>();
+      if (collider == null)
+      {
+        // Add default box collider
+        BoxCollider box = gameObject.AddComponent<BoxCollider>();
+        box.size = new Vector3(2f, 1.5f, 4f);  // Truck-sized
+        box.center = new Vector3(0f, 0.75f, 0f);
+        Debug.Log("[EntityBehaviour] Added default BoxCollider");
+      }
+
+      // Create Rigidbody
+      Rigidbody rb = gameObject.AddComponent<Rigidbody>();
+
+      if (_movementSettings != null)
+      {
+        // Use injected settings
+        HeroRigidbodySetup.ConfigureRigidbody(rb, _movementSettings);
+      }
+      else
+      {
+        // Use defaults
+        ConfigureRigidbodyDefaults(rb);
+      }
+
+      Debug.Log("[EntityBehaviour] Created new Rigidbody");
+      return rb;
+    }
+
+    /// <summary>
+    /// Configure Rigidbody with sensible defaults when settings aren't available
+    /// </summary>
+    private void ConfigureRigidbodyDefaults(Rigidbody rb)
+    {
+      rb.mass = 1000f;
+      rb.linearDamping = 0f;
+      rb.angularDamping = 0.05f;
+      rb.useGravity = false;
+      rb.isKinematic = false;
+      rb.interpolation = RigidbodyInterpolation.Interpolate;
+      rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+
+      // Freeze Y position and X/Z rotation for 2.5D runner
+      rb.constraints =
+        RigidbodyConstraints.FreezePositionY |
+        RigidbodyConstraints.FreezeRotationX |
+        RigidbodyConstraints.FreezeRotationZ;
+
+      Debug.Log("[EntityBehaviour] Rigidbody configured with defaults");
     }
 
     public void ReleaseEntity()

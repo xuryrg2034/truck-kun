@@ -56,49 +56,58 @@ namespace Code.Gameplay.Input
     {
       Add(systems.Create<InitializeInputSystem>());
       Add(systems.Create<EmitInputSystem>());
-      Add(systems.Create<CleanupInputSystem>());
+      // Removed CleanupInputSystem - input entity is now persistent
     }
   }
 
   public class InitializeInputSystem : IInitializeSystem
   {
     private readonly IInputService _input;
+    private readonly InputContext _inputContext;
 
-    public InitializeInputSystem(IInputService input)
+    public InitializeInputSystem(IInputService input, InputContext inputContext)
     {
       _input = input;
+      _inputContext = inputContext;
     }
 
-    public void Initialize() => _input.Enable();
+    public void Initialize()
+    {
+      _input.Enable();
+
+      // Create persistent input entity
+      InputEntity entity = _inputContext.CreateEntity();
+      entity.AddMoveInput(Vector2.zero);
+    }
   }
 
+  /// <summary>
+  /// Updates the persistent input entity with current input values.
+  /// Uses Replace instead of Add to update existing entity.
+  /// This ensures input is available for both Update and FixedUpdate systems.
+  /// </summary>
   public class EmitInputSystem : IExecuteSystem
   {
-    private readonly InputContext _inputContext;
     private readonly IInputService _input;
+    private readonly IGroup<InputEntity> _inputEntities;
 
     public EmitInputSystem(InputContext inputContext, IInputService input)
     {
-      _inputContext = inputContext;
       _input = input;
+      _inputEntities = inputContext.GetGroup(InputMatcher.MoveInput);
     }
 
     public void Execute()
     {
-      InputEntity entity = _inputContext.CreateEntity();
-      entity.AddMoveInput(_input.Move);
+      Vector2 move = _input.Move;
+
+      foreach (InputEntity entity in _inputEntities.GetEntities())
+      {
+        entity.ReplaceMoveInput(move);
+      }
     }
   }
 
-  public class CleanupInputSystem : ICleanupSystem
-  {
-    private readonly InputContext _inputContext;
-
-    public CleanupInputSystem(InputContext inputContext)
-    {
-      _inputContext = inputContext;
-    }
-
-    public void Cleanup() => _inputContext.DestroyAllEntities();
-  }
+  // CleanupInputSystem removed - input entity persists across frames
+  // This fixes timing issues between Update and FixedUpdate
 }

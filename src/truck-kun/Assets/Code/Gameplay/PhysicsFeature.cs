@@ -28,6 +28,9 @@ namespace Code.Gameplay.Features.Physics
   {
     public PhysicsFeature(ISystemFactory systems)
     {
+      // Debug system (can be removed later)
+      Add(systems.Create<DebugPhysicsEntitiesSystem>());
+
       // Input reading
       Add(systems.Create<ReadInputForPhysicsSystem>());
 
@@ -48,6 +51,58 @@ namespace Code.Gameplay.Features.Physics
 
       // Debug state update
       Add(systems.Create<UpdatePhysicsStateSystem>());
+    }
+  }
+
+  #endregion
+
+  #region Debug System
+
+  /// <summary>
+  /// Debug system to verify physics entities have all required components.
+  /// Remove this system after debugging is complete.
+  /// </summary>
+  public class DebugPhysicsEntitiesSystem : IExecuteSystem
+  {
+    private readonly GameContext _game;
+    private readonly IGroup<GameEntity> _heroes;
+    private readonly List<GameEntity> _buffer = new(4);
+    private float _lastLogTime;
+
+    public DebugPhysicsEntitiesSystem(GameContext game)
+    {
+      _game = game;
+      _heroes = game.GetGroup(GameMatcher.Hero);
+    }
+
+    public void Execute()
+    {
+      // Only log every 2 seconds
+      if (Time.time - _lastLogTime < 2f)
+        return;
+      _lastLogTime = Time.time;
+
+      foreach (GameEntity hero in _heroes.GetEntities(_buffer))
+      {
+        Debug.Log($"[PhysicsDebug] Hero entity {hero.id.Value}:\n" +
+          $"  - isPhysicsBody: {hero.isPhysicsBody}\n" +
+          $"  - hasRigidbody: {hero.hasRigidbody}\n" +
+          $"  - hasPhysicsVelocity: {hero.hasPhysicsVelocity}\n" +
+          $"  - hasAcceleration: {hero.hasAcceleration}\n" +
+          $"  - hasMoveDirection: {hero.hasMoveDirection}\n" +
+          $"  - hasWorldPosition: {hero.hasWorldPosition}\n" +
+          $"  - hasView: {hero.hasView}\n" +
+          $"  - hasTransform: {hero.hasTransform}");
+
+        if (hero.hasPhysicsVelocity)
+          Debug.Log($"  - PhysicsVelocity: {hero.physicsVelocity.Value}");
+
+        if (hero.hasRigidbody && hero.rigidbody.Value != null)
+          Debug.Log($"  - Rigidbody.velocity: {hero.rigidbody.Value.linearVelocity}");
+      }
+
+      if (_heroes.count == 0)
+        Debug.LogWarning("[PhysicsDebug] No hero entities found!");
     }
   }
 
@@ -85,6 +140,12 @@ namespace Code.Gameplay.Features.Physics
       }
 
       lateralInput = Mathf.Clamp(lateralInput, -1f, 1f);
+
+      // Debug input
+      if (Mathf.Abs(lateralInput) > 0.01f)
+      {
+        Debug.Log($"[ReadInputForPhysics] Lateral input: {lateralInput}, heroes count: {_physicsHeroes.count}");
+      }
 
       // Store in MoveDirection for physics systems to use
       foreach (GameEntity hero in _physicsHeroes.GetEntities(_heroBuffer))
@@ -199,6 +260,13 @@ namespace Code.Gameplay.Features.Physics
 
         // Store calculated velocity (Y is preserved from current for physics)
         Vector3 newVelocity = new Vector3(lateralVelocity, 0f, forwardVelocity);
+
+        // Debug lateral movement
+        if (Mathf.Abs(lateralInput) > 0.01f || Mathf.Abs(lateralVelocity) > 0.1f)
+        {
+          Debug.Log($"[CalcVelocity] input={lateralInput:F2}, lateralVel={lateralVelocity:F2}, newVel={newVelocity}");
+        }
+
         entity.ReplacePhysicsVelocity(newVelocity);
       }
     }
@@ -369,6 +437,7 @@ namespace Code.Gameplay.Features.Physics
   {
     private readonly IGroup<GameEntity> _entities;
     private readonly List<GameEntity> _buffer = new(4);
+    private float _lastLogTime;
 
     public ApplyPhysicsVelocitySystem(GameContext game)
     {
@@ -379,11 +448,21 @@ namespace Code.Gameplay.Features.Physics
 
     public void Execute()
     {
+      // Debug: log entity count periodically
+      if (Time.time - _lastLogTime > 2f)
+      {
+        _lastLogTime = Time.time;
+        Debug.Log($"[ApplyPhysicsVelocity] Found {_entities.count} entities with Rigidbody+PhysicsVelocity");
+      }
+
       foreach (GameEntity entity in _entities.GetEntities(_buffer))
       {
         Rigidbody rb = entity.rigidbody.Value;
         if (rb == null)
+        {
+          Debug.LogWarning("[ApplyPhysicsVelocity] Entity has null Rigidbody!");
           continue;
+        }
 
         Vector3 targetVelocity = entity.physicsVelocity.Value;
         Vector3 currentVelocity = rb.linearVelocity;
@@ -397,6 +476,12 @@ namespace Code.Gameplay.Features.Physics
         );
 
         rb.linearVelocity = newVelocity;
+
+        // Debug first few frames
+        if (Time.frameCount < 10)
+        {
+          Debug.Log($"[ApplyPhysicsVelocity] Frame {Time.frameCount}: velocity={newVelocity}");
+        }
       }
     }
   }

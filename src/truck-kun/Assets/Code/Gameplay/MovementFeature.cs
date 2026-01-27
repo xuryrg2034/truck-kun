@@ -20,6 +20,10 @@ namespace Code.Gameplay.Features.Movement
     }
   }
 
+  /// <summary>
+  /// Kinematic movement system for non-physics entities (NPCs, projectiles, etc.)
+  /// Physics-controlled entities (Hero with Rigidbody) are excluded.
+  /// </summary>
   public class DirectionalDeltaMoveSystem : IExecuteSystem
   {
     private readonly ITimeService _time;
@@ -29,10 +33,13 @@ namespace Code.Gameplay.Features.Movement
     public DirectionalDeltaMoveSystem(GameContext game, ITimeService time)
     {
       _time = time;
+      // Exclude Hero (has its own movement system) and Rigidbody (physics-controlled)
+      // This system only moves NPCs (pedestrians, etc.)
       _movers = game.GetGroup(GameMatcher.AllOf(
         GameMatcher.MoveDirection,
         GameMatcher.MoveSpeed,
-        GameMatcher.WorldPosition));
+        GameMatcher.WorldPosition)
+        .NoneOf(GameMatcher.Hero, GameMatcher.Rigidbody));
     }
 
     public void Execute()
@@ -74,6 +81,11 @@ namespace Code.Gameplay.Features.Movement
     }
   }
 
+  /// <summary>
+  /// Syncs Transform.position from WorldPosition for kinematic entities.
+  /// Physics-controlled entities (with Rigidbody) are excluded - their transform
+  /// is controlled by Unity physics and synced via SyncPhysicsPositionSystem.
+  /// </summary>
   public class UpdateTransformPositionSystem : IExecuteSystem
   {
     private readonly IGroup<GameEntity> _entities;
@@ -81,9 +93,12 @@ namespace Code.Gameplay.Features.Movement
 
     public UpdateTransformPositionSystem(GameContext game)
     {
+      // Exclude Rigidbody entities - they are controlled by physics
+      // Setting transform.position directly interferes with Rigidbody physics
       _entities = game.GetGroup(GameMatcher.AllOf(
         GameMatcher.WorldPosition,
-        GameMatcher.Transform));
+        GameMatcher.Transform)
+        .NoneOf(GameMatcher.Rigidbody));
     }
 
     public void Execute()

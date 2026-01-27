@@ -19,6 +19,43 @@
 
 ---
 
+## 2026-01-27 20:15 - Интеграция PhysicsFeature в BattleFeature
+
+**Файлы:**
+- `Assets/Code/Gameplay/BattleFeature.cs` - полностью переписан
+- `Assets/Code/Gameplay/MovementFeature.cs` - обновлён DirectionalDeltaMoveSystem
+- `Assets/Code/Infrastructure/EcsBootstrap.cs` - упрощён, убран отдельный _physicsFeature
+
+**Причина:** Интеграция физической системы в основную архитектуру
+**Детали:**
+
+BattleFeature.cs:
+- Добавлен `_physicsFeature` как внутренний член
+- `Initialize()` - инициализирует и physics
+- `Execute()` - выполняет Update-системы (логика)
+- `FixedExecute()` - выполняет FixedUpdate-системы (физика)
+- `Cleanup()` - очищает обе системы
+- `TearDown()` - корректно уничтожает обе системы
+
+MovementFeature.cs:
+- `DirectionalDeltaMoveSystem` теперь исключает:
+  - `Hero` (у героя своя система движения)
+  - `Rigidbody` (физика управляется PhysicsFeature)
+- Система теперь только для NPC (пешеходы и т.д.)
+
+EcsBootstrap.cs:
+- Удалён отдельный `_physicsFeature`
+- `FixedUpdate()` вызывает `_battleFeature.FixedExecute()`
+- Упрощён `OnDestroy()`
+
+Порядок выполнения:
+```
+Update:      Input → Hero → Pedestrian → Collision → Feedback → Quest → Economy → BindView → Movement
+FixedUpdate: Physics (ReadInput → CalcVelocity → Surface → Clamp → Apply → Sync → State)
+```
+
+---
+
 ## 2026-01-27 19:30 - Проверка и подтверждение PhysicsFeature
 
 **Файлы:**

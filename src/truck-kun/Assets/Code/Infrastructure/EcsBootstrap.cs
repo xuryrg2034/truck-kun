@@ -6,7 +6,6 @@ using Code.Gameplay.Features.Economy;
 using Code.Gameplay.Features.Feedback;
 using Code.Gameplay.Features.Hero;
 using Code.Gameplay.Features.Pedestrian;
-using Code.Gameplay.Features.Physics;
 using Code.Gameplay.Features.Quest;
 using Code.Gameplay.Input;
 using Code.Infrastructure.Systems;
@@ -46,7 +45,6 @@ namespace Code.Infrastructure
 
     private DiContainer _container;
     private BattleFeature _battleFeature;
-    private PhysicsFeature _physicsFeature;  // Physics runs in FixedUpdate
     private IInputService _inputService;
     private IDaySessionService _daySessionService;
     private IMoneyService _moneyService;
@@ -90,15 +88,11 @@ namespace Code.Infrastructure
       _upgradeService = _container.Resolve<IUpgradeService>();
       _upgradeService.Initialize();
 
-      // Create game systems
+      // Create game systems (includes PhysicsFeature for FixedUpdate)
       ISystemFactory systems = _container.Resolve<ISystemFactory>();
       _battleFeature = systems.Create<BattleFeature>();
       _battleFeature.Initialize();
-
-      // Create physics systems (runs in FixedUpdate)
-      _physicsFeature = systems.Create<PhysicsFeature>();
-      _physicsFeature.Initialize();
-      Debug.Log("[EcsBootstrap] PhysicsFeature initialized (runs in FixedUpdate)");
+      Debug.Log("[EcsBootstrap] BattleFeature initialized (Physics runs in FixedUpdate)");
 
       _moneyService = _container.Resolve<IMoneyService>();
       _questService = _container.Resolve<IQuestService>();
@@ -383,25 +377,18 @@ namespace Code.Infrastructure
     /// </summary>
     private void FixedUpdate()
     {
-      if (!_physicsEnabled || _physicsFeature == null || _daySessionService == null)
+      if (!_physicsEnabled || _battleFeature == null || _daySessionService == null)
         return;
 
       // Don't run physics when day is finished
       if (_daySessionService.State == DayState.Finished)
         return;
 
-      _physicsFeature.Execute();
-      _physicsFeature.Cleanup();
+      _battleFeature.FixedExecute();
     }
 
     private void OnDestroy()
     {
-      if (_physicsFeature != null)
-      {
-        _physicsFeature.TearDown();
-        _physicsFeature = null;
-      }
-
       if (_battleFeature != null)
       {
         _battleFeature.TearDown();
