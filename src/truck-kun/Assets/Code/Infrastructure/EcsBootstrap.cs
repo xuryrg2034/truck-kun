@@ -189,7 +189,10 @@ namespace Code.Infrastructure
       // Collision settings
       _collisionSettings = new CollisionSettings
       {
-        HitRadius = balance.Movement.HitRadius
+        HitRadius = balance.Movement.HitRadius,
+        UsePhysicsCollision = true,  // Use physics-based collision (OnCollisionEnter)
+        MinImpactForce = 0.5f,
+        StrongImpactForce = 5f
       };
 
       // Pedestrian settings

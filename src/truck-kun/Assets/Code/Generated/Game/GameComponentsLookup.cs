@@ -13,27 +13,28 @@ public static class GameComponentsLookup {
     public const int View = 2;
     public const int ViewPrefab = 3;
     public const int WorldPosition = 4;
-    public const int Hit = 5;
-    public const int HitEvent = 6;
-    public const int Hero = 7;
-    public const int MoveDirection = 8;
-    public const int MoveSpeed = 9;
-    public const int CrossingPedestrian = 10;
-    public const int Pedestrian = 11;
-    public const int PedestrianType = 12;
-    public const int Acceleration = 13;
-    public const int PhysicsBody = 14;
-    public const int PhysicsConstraints = 15;
-    public const int PhysicsDrag = 16;
-    public const int PhysicsImpact = 17;
-    public const int PhysicsState = 18;
-    public const int PhysicsVelocity = 19;
-    public const int Rigidbody = 20;
-    public const int SurfaceModifier = 21;
-    public const int SurfaceZone = 22;
-    public const int ViolationEvent = 23;
+    public const int CollisionImpact = 5;
+    public const int Hit = 6;
+    public const int HitEvent = 7;
+    public const int Hero = 8;
+    public const int MoveDirection = 9;
+    public const int MoveSpeed = 10;
+    public const int CrossingPedestrian = 11;
+    public const int Pedestrian = 12;
+    public const int PedestrianType = 13;
+    public const int Acceleration = 14;
+    public const int PhysicsBody = 15;
+    public const int PhysicsConstraints = 16;
+    public const int PhysicsDrag = 17;
+    public const int PhysicsImpact = 18;
+    public const int PhysicsState = 19;
+    public const int PhysicsVelocity = 20;
+    public const int Rigidbody = 21;
+    public const int SurfaceModifier = 22;
+    public const int SurfaceZone = 23;
+    public const int ViolationEvent = 24;
 
-    public const int TotalComponents = 24;
+    public const int TotalComponents = 25;
 
     public static readonly string[] componentNames = {
         "Id",
@@ -41,6 +42,7 @@ public static class GameComponentsLookup {
         "View",
         "ViewPrefab",
         "WorldPosition",
+        "CollisionImpact",
         "Hit",
         "HitEvent",
         "Hero",
@@ -68,6 +70,7 @@ public static class GameComponentsLookup {
         typeof(Code.Common.View),
         typeof(Code.Common.ViewPrefab),
         typeof(Code.Common.WorldPosition),
+        typeof(Code.Gameplay.Features.Collision.CollisionImpact),
         typeof(Code.Gameplay.Features.Collision.Hit),
         typeof(Code.Gameplay.Features.Collision.HitEvent),
         typeof(Code.Gameplay.Features.Hero.Hero),

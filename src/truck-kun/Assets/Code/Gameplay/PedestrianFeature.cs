@@ -375,14 +375,27 @@ namespace Code.Gameplay.Features.Pedestrian
       // Apply rotation (forward tilt)
       pedestrian.transform.rotation = Quaternion.Euler(data.ForwardTilt, 0f, 0f);
 
-      // Ensure collider exists for collision detection
-      if (pedestrian.GetComponent<Collider>() == null)
+      // Ensure collider exists for physics collision detection
+      CapsuleCollider collider = pedestrian.GetComponent<CapsuleCollider>();
+      if (collider == null)
       {
-        CapsuleCollider collider = pedestrian.AddComponent<CapsuleCollider>();
+        collider = pedestrian.AddComponent<CapsuleCollider>();
         collider.height = 2f;
         collider.radius = 0.3f;
         collider.center = new Vector3(0f, 1f, 0f);
       }
+      // Explicitly not a trigger - we want OnCollisionEnter, not OnTriggerEnter
+      collider.isTrigger = false;
+
+      // Add kinematic Rigidbody for better collision detection performance
+      // Kinematic = doesn't respond to physics forces, but participates in collision detection
+      Rigidbody rb = pedestrian.GetComponent<Rigidbody>();
+      if (rb == null)
+      {
+        rb = pedestrian.AddComponent<Rigidbody>();
+      }
+      rb.isKinematic = true;
+      rb.useGravity = false;
 
       return pedestrian;
     }

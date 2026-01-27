@@ -95,11 +95,31 @@ namespace Code.Infrastructure.View
 
         _entity.AddRigidbody(_rigidbody);
         Debug.Log($"[EntityBehaviour] SUCCESS: Bound Rigidbody to entity {_entity.id.Value} at {_rigidbody.position}");
+
+        // Add collision handler for Hero
+        if (_entity.isHero)
+        {
+          SetupCollisionHandler();
+        }
       }
       else
       {
         Debug.LogError("[EntityBehaviour] FAILED: Could not create or find Rigidbody!");
       }
+    }
+
+    /// <summary>
+    /// Setup PhysicsCollisionHandler for hero to detect collisions with pedestrians
+    /// </summary>
+    private void SetupCollisionHandler()
+    {
+      PhysicsCollisionHandler handler = GetComponent<PhysicsCollisionHandler>();
+      if (handler == null)
+      {
+        handler = gameObject.AddComponent<PhysicsCollisionHandler>();
+      }
+      handler.Initialize(_entity);
+      Debug.Log("[EntityBehaviour] PhysicsCollisionHandler added to hero");
     }
 
     /// <summary>

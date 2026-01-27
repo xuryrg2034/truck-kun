@@ -19,6 +19,38 @@
 
 ---
 
+## 2026-01-27 21:30 - Переход на физические коллизии
+
+**Файлы:**
+- `Assets/Code/Infrastructure/PhysicsCollisionHandler.cs` - создан
+- `Assets/Code/Gameplay/CollisionFeature.cs` - переработан
+- `Assets/Code/Infrastructure/EntityBehaviour.cs` - добавлен SetupCollisionHandler
+- `Assets/Code/Gameplay/PedestrianFeature.cs` - добавлен kinematic Rigidbody
+- `Assets/Code/Infrastructure/EcsBootstrap.cs` - настройки физических коллизий
+
+**Причина:** Переход с distance check на Unity OnCollisionEnter
+**Детали:**
+
+PhysicsCollisionHandler.cs:
+- MonoBehaviour для обработки OnCollisionEnter
+- Находит GameEntity пешехода через EntityBehaviour
+- Создаёт HitEvent с CollisionImpact данными
+- Автоматически добавляется на Hero в EntityBehaviour
+
+CollisionFeature.cs:
+- Новый компонент `CollisionImpact { Force, Point, Normal }`
+- `FallbackCollisionDetectionSystem` - только для non-physics heroes
+- `CollisionSettings.UsePhysicsCollision` - флаг переключения
+- Extension methods для VFX scaling
+
+PedestrianFeature.cs:
+- Пешеходы получают kinematic Rigidbody
+- Explicit `isTrigger = false` на коллайдере
+
+**Требуется:** Запустить Jenny для генерации CollisionImpact
+
+---
+
 ## 2026-01-27 20:15 - Интеграция PhysicsFeature в BattleFeature
 
 **Файлы:**
