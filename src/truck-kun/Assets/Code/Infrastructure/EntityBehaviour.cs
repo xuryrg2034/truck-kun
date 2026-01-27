@@ -65,7 +65,7 @@ namespace Code.Infrastructure.View
       // Bind Rigidbody to entity
       if (_rigidbody != null)
       {
-        _entity.AddRigidbodyComponent(_rigidbody);
+        _entity.AddRigidbody(_rigidbody);
         Debug.Log($"[EntityBehaviour] Bound Rigidbody to entity {_entity.id.Value}");
       }
     }
@@ -76,8 +76,8 @@ namespace Code.Infrastructure.View
         return;
 
       // Release physics component
-      if (_entity.hasRigidbodyComponent)
-        _entity.RemoveRigidbodyComponent();
+      if (_entity.hasRigidbody)
+        _entity.RemoveRigidbody();
 
       // Release core components
       if (_entity.hasTransform)

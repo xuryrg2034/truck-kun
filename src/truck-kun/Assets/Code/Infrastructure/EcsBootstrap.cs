@@ -6,6 +6,7 @@ using Code.Gameplay.Features.Economy;
 using Code.Gameplay.Features.Feedback;
 using Code.Gameplay.Features.Hero;
 using Code.Gameplay.Features.Pedestrian;
+using Code.Gameplay.Features.Physics;
 using Code.Gameplay.Features.Quest;
 using Code.Gameplay.Input;
 using Code.Infrastructure.Systems;
@@ -45,6 +46,7 @@ namespace Code.Infrastructure
 
     private DiContainer _container;
     private BattleFeature _battleFeature;
+    private PhysicsFeature _physicsFeature;  // Physics runs in FixedUpdate
     private IInputService _inputService;
     private IDaySessionService _daySessionService;
     private IMoneyService _moneyService;
@@ -53,6 +55,7 @@ namespace Code.Infrastructure
     private QuestUIController _questUI;
     private EndDayController _endDayController;
     private bool _dayFinishedHandled;
+    private bool _physicsEnabled = true;  // Toggle for physics system
 
     private void Awake()
     {
@@ -91,6 +94,11 @@ namespace Code.Infrastructure
       ISystemFactory systems = _container.Resolve<ISystemFactory>();
       _battleFeature = systems.Create<BattleFeature>();
       _battleFeature.Initialize();
+
+      // Create physics systems (runs in FixedUpdate)
+      _physicsFeature = systems.Create<PhysicsFeature>();
+      _physicsFeature.Initialize();
+      Debug.Log("[EcsBootstrap] PhysicsFeature initialized (runs in FixedUpdate)");
 
       _moneyService = _container.Resolve<IMoneyService>();
       _questService = _container.Resolve<IQuestService>();
@@ -157,12 +165,31 @@ namespace Code.Infrastructure
     {
       GameBalance balance = _balanceProvider.Balance;
 
-      // Movement settings
+      // Movement settings (including physics parameters)
       _runnerMovement = new RunnerMovementSettings
       {
+        // Legacy kinematic settings
         ForwardSpeed = balance.Movement.ForwardSpeed,
         LateralSpeed = balance.Movement.LateralSpeed,
-        RoadWidth = balance.Movement.RoadWidth
+        RoadWidth = balance.Movement.RoadWidth,
+
+        // Physics speed limits
+        MinForwardSpeed = balance.Movement.ForwardSpeed * 0.6f,  // 60% of forward as minimum
+        MaxForwardSpeed = balance.Movement.ForwardSpeed * 1.6f,  // 160% of forward as maximum
+        MaxLateralSpeed = balance.Movement.LateralSpeed,
+
+        // Physics acceleration (tuned for responsive feel)
+        ForwardAcceleration = 10f,
+        LateralAcceleration = 15f,
+        Deceleration = 8f,
+
+        // Physics drag
+        BaseDrag = 0.5f,
+
+        // Rigidbody settings
+        Mass = 1000f,
+        AngularDrag = 0.05f,
+        UseContinuousCollision = true
       };
 
       // Collision settings
@@ -350,8 +377,31 @@ namespace Code.Infrastructure
       _battleFeature.Cleanup();
     }
 
+    /// <summary>
+    /// Physics systems run in FixedUpdate for deterministic physics behavior.
+    /// This ensures consistent physics regardless of frame rate.
+    /// </summary>
+    private void FixedUpdate()
+    {
+      if (!_physicsEnabled || _physicsFeature == null || _daySessionService == null)
+        return;
+
+      // Don't run physics when day is finished
+      if (_daySessionService.State == DayState.Finished)
+        return;
+
+      _physicsFeature.Execute();
+      _physicsFeature.Cleanup();
+    }
+
     private void OnDestroy()
     {
+      if (_physicsFeature != null)
+      {
+        _physicsFeature.TearDown();
+        _physicsFeature = null;
+      }
+
       if (_battleFeature != null)
       {
         _battleFeature.TearDown();

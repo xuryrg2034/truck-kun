@@ -8,7 +8,8 @@
       "Bash(if [ -f \"C:/Projects/home/unity/Truck-kun/src/truck-kun/Assets/Code/Debug.meta\" ])",
       "Bash(then mv \"C:/Projects/home/unity/Truck-kun/src/truck-kun/Assets/Code/Debug.meta\" \"C:/Projects/home/unity/Truck-kun/src/truck-kun/Assets/Code/DevTools.meta\")",
       "Bash(else echo \"No .meta file found\")",
-      "Bash(fi)"
+      "Bash(fi)",
+      "mcp__ide__getDiagnostics"
     ]
   }
 }

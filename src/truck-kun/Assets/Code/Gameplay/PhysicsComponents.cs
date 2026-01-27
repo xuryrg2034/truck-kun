@@ -241,7 +241,7 @@ namespace Code.Gameplay.Features.Physics
     /// </summary>
     public static bool HasPhysicsSetup(this GameEntity entity)
     {
-      return entity.hasRigidbodyComponent && entity.isPhysicsBody;
+      return entity.hasRigidbody && entity.isPhysicsBody;
     }
 
     /// <summary>
@@ -252,8 +252,8 @@ namespace Code.Gameplay.Features.Physics
       if (entity.hasPhysicsVelocity)
         return entity.physicsVelocity.Value.magnitude;
 
-      if (entity.hasRigidbodyComponent && entity.rigidbodyComponent.Value != null)
-        return entity.rigidbodyComponent.Value.velocity.magnitude;
+      if (entity.hasRigidbody && entity.rigidbody.Value != null)
+        return entity.rigidbody.Value.linearVelocity.magnitude;
 
       return 0f;
     }
@@ -266,8 +266,8 @@ namespace Code.Gameplay.Features.Physics
       if (entity.hasPhysicsVelocity)
         return entity.physicsVelocity.Value.z;
 
-      if (entity.hasRigidbodyComponent && entity.rigidbodyComponent.Value != null)
-        return entity.rigidbodyComponent.Value.velocity.z;
+      if (entity.hasRigidbody && entity.rigidbody.Value != null)
+        return entity.rigidbody.Value.linearVelocity.z;
 
       return 0f;
     }
@@ -280,8 +280,8 @@ namespace Code.Gameplay.Features.Physics
       if (entity.hasPhysicsVelocity)
         return entity.physicsVelocity.Value.x;
 
-      if (entity.hasRigidbodyComponent && entity.rigidbodyComponent.Value != null)
-        return entity.rigidbodyComponent.Value.velocity.x;
+      if (entity.hasRigidbody && entity.rigidbody.Value != null)
+        return entity.rigidbody.Value.linearVelocity.x;
 
       return 0f;
     }

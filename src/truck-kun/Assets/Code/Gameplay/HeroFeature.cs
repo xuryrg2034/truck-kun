@@ -199,8 +199,8 @@ namespace Code.Gameplay.Features.Hero
 
       // Mass and drag
       rb.mass = settings.Mass;
-      rb.drag = 0f;  // We handle drag in our physics system
-      rb.angularDrag = settings.AngularDrag;
+      rb.linearDamping = 0f;  // We handle drag in our physics system
+      rb.angularDamping = settings.AngularDrag;
 
       // Gravity (disabled for 2.5D runner)
       rb.useGravity = false;
@@ -328,10 +328,11 @@ namespace Code.Gameplay.Features.Hero
       _settings = settings;
       _spawnPoint = spawnPoint;
       _inputs = input.GetGroup(InputMatcher.AllOf(InputMatcher.MoveInput));
+      
       _heroes = game.GetGroup(GameMatcher.AllOf(
         GameMatcher.Hero,
         GameMatcher.WorldPosition)
-        .NoneOf(GameMatcher.RigidbodyComponent));  // Skip physics-enabled heroes
+        .NoneOf(GameMatcher.Rigidbody));
     }
 
     public void Execute()

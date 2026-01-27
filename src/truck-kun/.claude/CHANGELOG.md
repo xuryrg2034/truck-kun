@@ -19,6 +19,74 @@
 
 ---
 
+## 2026-01-27 19:30 - Проверка и подтверждение PhysicsFeature
+
+**Файлы:**
+- `Assets/Code/Gameplay/PhysicsFeature.cs` - проверен, код корректен
+- `Assets/Code/Gameplay/PhysicsComponents.cs` - проверен, все компоненты правильные
+- `Assets/Code/Generated/Game/Components/` - Jenny сгенерировал все 9 физических компонентов
+
+**Причина:** Проверка после проблем с генерацией Jenny
+**Детали:**
+- Все компоненты успешно сгенерированы Jenny
+- Используется правильный API: `GameMatcher.Rigidbody` (не `RigidbodyComponent`)
+- Используется `rb.linearVelocity` (Unity 6+ API)
+- PhysicsFeature выполняется в `FixedUpdate()` для стабильной физики
+
+---
+
+## 2026-01-27 16:02 - Удалено дублирующее присваивание группы героев
+
+**Файлы:**
+- `Assets/Code/Gameplay/HeroFeature.cs` - удалено повторное создание `_heroes` в `RunnerHeroMoveSystem`
+
+**Причина:** Устранение дублирующей логики.
+**Детали:** Оставлено единственное корректное создание группы с `.NoneOf(GameMatcher.Rigidbody)`.
+
+---
+
+## 2026-01-27 15:58 - Исправление matcher для Rigidbody
+
+**Файлы:**
+- `Assets/Code/Gameplay/HeroFeature.cs` - заменён `GameMatcher.RigidbodyComponent` на `GameMatcher.Rigidbody`
+
+**Причина:** Исправить ошибку компиляции CS0117 из-за неверного имени matcher.
+**Детали:** Entitas отбрасывает суффикс `Component` в имени matcher.
+
+---
+
+## 2026-01-27 18:15 - Создание PhysicsFeature с системами движения
+
+**Файлы:**
+- `Assets/Code/Gameplay/PhysicsFeature.cs` - создан
+- `Assets/Code/Common/Services.cs` - обновлён (добавлен FixedDeltaTime)
+- `Assets/Code/Infrastructure/EcsBootstrap.cs` - обновлён (FixedUpdate для физики)
+
+**Причина:** Реализация гибридной физической системы движения
+**Детали:**
+
+PhysicsFeature.cs содержит 7 систем:
+1. `ReadInputForPhysicsSystem` - чтение lateral input
+2. `CalculatePhysicsVelocitySystem` - расчёт velocity с ускорением
+3. `ApplySurfaceModifiersSystem` - модификаторы поверхности (friction, drag)
+4. `ClampPhysicsVelocitySystem` - ограничения скорости и границ дороги
+5. `ApplyPhysicsVelocitySystem` - применение velocity к Rigidbody
+6. `SyncPhysicsPositionSystem` - синхронизация WorldPosition ← Rigidbody
+7. `UpdatePhysicsStateSystem` - обновление состояния для отладки
+
+Services.cs:
+- Добавлен `FixedDeltaTime` для физики
+- Добавлен `UnscaledDeltaTime` для UI
+- Добавлен `TimeScale` для slow-mo
+- Добавлен `Time` для общего времени
+
+EcsBootstrap.cs:
+- Добавлен `_physicsFeature`
+- Добавлен `FixedUpdate()` для выполнения PhysicsFeature
+- Обновлён `CreateSettingsFromBalance()` с физическими параметрами
+
+---
+
 ## 2026-01-27 17:45 - Обновление HeroFactory и EntityBehaviour для физики
 
 **Файлы:**
