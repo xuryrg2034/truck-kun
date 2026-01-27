@@ -9,59 +9,80 @@
 
 ### Контекст задачи
 
-**Цель:** Добавить анимации и VFX эффекты для улучшения game feel
+**Цель:** Миграция движения героя на гибридную физику с Rigidbody
 
 **Запрошено пользователем:**
-1. NPC анимации (walk cycle 2s, idle sway)
-2. Улучшенные hit particles (искры, обломки)
-3. Trail за грузовиком + dust clouds
-4. UI анимации (fade, scale bounce) с DOTween
-5. Camera shake при столкновении
+1. Анализ текущей системы движения (RunnerHeroMoveSystem)
+2. Создание Entitas компонентов для физики
+3. Подготовка к интеграции Rigidbody
 
 ### Что сделано
 
-1. ✅ Создан `NPCAnimator.cs`:
-   - Idle анимация: sway + breathing
-   - Walk анимация: bob + sway + lean (2 sec cycle)
-   - `NPCAnimationManager` для управления
-   - `NPCAnimationSettings` для конфигурации
+1. ✅ **Анализ движения героя:**
+   - `RunnerHeroMoveSystem` - кинематическое движение через WorldPosition
+   - Forward: автоматически вперёд (Vector3.forward * speed * dt)
+   - Lateral: по input.x с Clamp по границам дороги
+   - `UpdateTransformPositionSystem` - синхронизация Transform.position
 
-2. ✅ Создана система контекста `.claude/`:
-   - `AGENTS.md` - главные инструкции
-   - `CONTEXT.md` - структура проекта
-   - `ARCHITECTURE.md` - архитектура
-   - `TODO.md` - задачи
-   - `CHANGELOG.md` - история
-   - `SESSION_NOTES.md` - этот файл
+2. ✅ **Создан `PhysicsComponents.cs`:**
+   - `RigidbodyComponent` - ссылка на Unity Rigidbody
+   - `PhysicsVelocity` - целевая скорость
+   - `PhysicsBody` - флаг физического объекта
+   - `Acceleration` - forward, lateral, deceleration
+   - `PhysicsDrag` - base, current
+   - `SurfaceModifier` - friction, drag, surfaceType
+   - `SurfaceZone` - триггер для поверхностей
+   - `PhysicsConstraints` - min/max speed, road bounds
+   - `PhysicsState` - текущее состояние (отладка)
+   - `PhysicsImpact` - данные столкновения
+   - `PhysicsSettings` - конфигурация
+   - `SurfaceType` enum
+   - Extension methods
 
-### Что осталось
+3. ✅ Создана система контекста `.claude/`
+
+4. ✅ Создан `NPCAnimator.cs` (VFX - приостановлено)
+
+### Что осталось (Physics)
+
+- [ ] Запустить Jenny для генерации кода
+- [ ] Модифицировать `EntityBehaviour.cs` для привязки Rigidbody
+- [ ] Создать `PhysicsHeroMoveSystem` (замена RunnerHeroMoveSystem)
+- [ ] Модифицировать `UpdateTransformPositionSystem` для физики
+- [ ] Настроить Rigidbody на префабе PlayerTruck
+- [ ] Создать `PhysicsFeature` для группировки систем
+
+### Что осталось (VFX - приостановлено)
 
 - [ ] Camera shake
 - [ ] Улучшенные hit particles
 - [ ] UI анимации
 - [ ] Trail + dust effects
-- [ ] Интеграция NPCAnimator с PedestrianFactory
 
 ### Важные решения
 
-1. **TweenSystem vs DOTween**: Проект использует custom TweenSystem. DOTween установлен как fallback. Решение: продолжать с custom для простых анимаций.
+1. **Гибридная физика**: Rigidbody.velocity для героя, кинематика для NPC
+2. **Границы дороги**: Clamp на velocity.x, не на позицию
+3. **Surface модификаторы**: Отдельные компоненты для friction/drag
+4. **PhysicsSettings**: Вынесено в отдельный класс для GameBalance
 
-2. **NPCAnimator подход**: Процедурные анимации через код вместо Unity Animator. Причина: все модели процедурные, нет Animator Controllers.
+### План интеграции физики
 
-3. **Структура VFX**: Все VFX в `Assets/Code/Art/VFX/`. Конфигурация в `GameBalance.FeedbackBalance`.
-
-### Заметки для следующей сессии
-
-- NPCAnimator создан, но не интегрирован в PedestrianFactory
-- Нужно добавить вызов `NPCAnimationManager.AttachAnimator()` при создании NPC
-- CrossingPedestrian должен автоматически включать walking state
-- Camera shake - следующий приоритет (максимальный импакт при минимальных усилиях)
+```
+Этап 1: ✅ Компоненты созданы
+Этап 2: Генерация Jenny
+Этап 3: EntityBehaviour + Rigidbody привязка
+Этап 4: PhysicsHeroMoveSystem
+Этап 5: UpdateTransformPositionSystem модификация
+Этап 6: Префаб настройка
+Этап 7: Тестирование
+```
 
 ### Открытые вопросы
 
-1. Какой визуальный стиль trail предпочтительнее - tire marks или energy trail?
-2. Нужна ли настройка VFX через GameBalance или хардкод достаточно?
-3. Cinemachine для camera shake или custom implementation?
+1. Использовать `rb.velocity =` или `rb.MovePosition()`?
+2. Нужна ли интерполяция Rigidbody (Interpolate)?
+3. Continuous или Discrete collision detection?
 
 ---
 

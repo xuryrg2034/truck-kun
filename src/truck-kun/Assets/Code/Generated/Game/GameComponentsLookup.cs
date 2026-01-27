@@ -21,9 +21,19 @@ public static class GameComponentsLookup {
     public const int CrossingPedestrian = 10;
     public const int Pedestrian = 11;
     public const int PedestrianType = 12;
-    public const int ViolationEvent = 13;
+    public const int Acceleration = 13;
+    public const int PhysicsBody = 14;
+    public const int PhysicsConstraints = 15;
+    public const int PhysicsDrag = 16;
+    public const int PhysicsImpact = 17;
+    public const int PhysicsState = 18;
+    public const int PhysicsVelocity = 19;
+    public const int Rigidbody = 20;
+    public const int SurfaceModifier = 21;
+    public const int SurfaceZone = 22;
+    public const int ViolationEvent = 23;
 
-    public const int TotalComponents = 14;
+    public const int TotalComponents = 24;
 
     public static readonly string[] componentNames = {
         "Id",
@@ -39,6 +49,16 @@ public static class GameComponentsLookup {
         "CrossingPedestrian",
         "Pedestrian",
         "PedestrianType",
+        "Acceleration",
+        "PhysicsBody",
+        "PhysicsConstraints",
+        "PhysicsDrag",
+        "PhysicsImpact",
+        "PhysicsState",
+        "PhysicsVelocity",
+        "Rigidbody",
+        "SurfaceModifier",
+        "SurfaceZone",
         "ViolationEvent"
     };
 
@@ -56,6 +76,16 @@ public static class GameComponentsLookup {
         typeof(Code.Gameplay.Features.Pedestrian.CrossingPedestrian),
         typeof(Code.Gameplay.Features.Pedestrian.Pedestrian),
         typeof(Code.Gameplay.Features.Pedestrian.PedestrianType),
+        typeof(Code.Gameplay.Features.Physics.Acceleration),
+        typeof(Code.Gameplay.Features.Physics.PhysicsBody),
+        typeof(Code.Gameplay.Features.Physics.PhysicsConstraints),
+        typeof(Code.Gameplay.Features.Physics.PhysicsDrag),
+        typeof(Code.Gameplay.Features.Physics.PhysicsImpact),
+        typeof(Code.Gameplay.Features.Physics.PhysicsState),
+        typeof(Code.Gameplay.Features.Physics.PhysicsVelocity),
+        typeof(Code.Gameplay.Features.Physics.RigidbodyComponent),
+        typeof(Code.Gameplay.Features.Physics.SurfaceModifier),
+        typeof(Code.Gameplay.Features.Physics.SurfaceZone),
         typeof(Code.Gameplay.Features.Quest.ViolationEvent)
     };
 }

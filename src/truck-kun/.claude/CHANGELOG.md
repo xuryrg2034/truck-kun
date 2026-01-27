@@ -19,6 +19,31 @@
 
 ---
 
+## 2026-01-27 17:15 - Создание физических компонентов Entitas
+
+**Файлы:**
+- `Assets/Code/Gameplay/PhysicsComponents.cs` - создан
+
+**Причина:** Подготовка к миграции на гибридную физику с Rigidbody
+**Детали:**
+- `RigidbodyComponent` - ссылка на Unity Rigidbody
+- `PhysicsVelocity` - целевая скорость
+- `PhysicsBody` - флаг физического объекта
+- `Acceleration` - параметры ускорения (forward, lateral, deceleration)
+- `PhysicsDrag` - сопротивление (base, current)
+- `SurfaceModifier` - модификаторы поверхности (friction, drag, type)
+- `SurfaceZone` - триггер-зона поверхности
+- `PhysicsConstraints` - ограничения скорости и границы дороги
+- `PhysicsState` - текущее состояние (для отладки и эффектов)
+- `PhysicsImpact` - данные столкновения
+- `PhysicsSettings` - конфигурация для GameBalance
+- `SurfaceType` enum - Normal, Oil, Grass, Ice, Puddle
+- Extension methods для удобной работы
+
+**Требуется:** Запустить Jenny для генерации кода Entitas
+
+---
+
 ## 2026-01-27 16:30 - Создание системы контекста для Claude Code
 
 **Файлы:**
