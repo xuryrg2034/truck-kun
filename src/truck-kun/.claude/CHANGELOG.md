@@ -19,6 +19,28 @@
 
 ---
 
+## 2026-01-27 17:45 - Обновление HeroFactory и EntityBehaviour для физики
+
+**Файлы:**
+- `Assets/Code/Gameplay/HeroFeature.cs` - обновлён
+- `Assets/Code/Infrastructure/EntityBehaviour.cs` - обновлён
+
+**Причина:** Интеграция физических компонентов в создание героя
+**Детали:**
+
+HeroFeature.cs:
+- `RunnerMovementSettings` расширен: Min/MaxForwardSpeed, MaxLateralSpeed, ForwardAcceleration, LateralAcceleration, Deceleration, BaseDrag, Mass, AngularDrag, UseContinuousCollision
+- `HeroFactory.CreateHero()` добавляет все физические компоненты
+- `HeroRigidbodySetup` - статический хелпер для настройки Rigidbody
+- `RunnerHeroMoveSystem` теперь пропускает сущности с RigidbodyComponent (`.NoneOf()`)
+
+EntityBehaviour.cs:
+- Добавлен `[Inject] Construct(RunnerMovementSettings)` для настроек
+- `BindRigidbody()` - автоматическая привязка/создание Rigidbody
+- `OnCollisionEnter()` - обработка столкновений через PhysicsImpact
+
+---
+
 ## 2026-01-27 17:15 - Создание физических компонентов Entitas
 
 **Файлы:**
