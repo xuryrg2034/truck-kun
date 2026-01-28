@@ -28,33 +28,9 @@ MonoBehaviour:
     SidewalkOffset: 1.5
     TypeBalances:
     - Kind: 0
-      SpawnWeight: 0.25
-      Speed: 2
-      Scale: 0.85
-      Color: {r: 1, g: 1, b: 1, a: 1}
-      ForwardTilt: 0
-    - Kind: 1
-      SpawnWeight: 0.3
+      SpawnWeight: 1
       Speed: 1.8
       Scale: 1
-      Color: {r: 1, g: 1, b: 1, a: 1}
-      ForwardTilt: 0
-    - Kind: 2
-      SpawnWeight: 0.15
-      Speed: 0.8
-      Scale: 0.8
-      Color: {r: 1, g: 1, b: 1, a: 1}
-      ForwardTilt: 0
-    - Kind: 3
-      SpawnWeight: 0.1
-      Speed: 0.9
-      Scale: 0.9
-      Color: {r: 1, g: 1, b: 1, a: 1}
-      ForwardTilt: 0
-    - Kind: 4
-      SpawnWeight: 0.2
-      Speed: 2.2
-      Scale: 0.95
       Color: {r: 1, g: 1, b: 1, a: 1}
       ForwardTilt: 0
   Economy:
@@ -65,7 +41,7 @@ MonoBehaviour:
     BaseQuestReward: 50
     RewardPerTarget: 10
   Day:
-    DurationSeconds: 5
+    DurationSeconds: 60
     MinQuestsPerDay: 1
     MaxQuestsPerDay: 1
     QuestTargets:

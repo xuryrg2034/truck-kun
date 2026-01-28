@@ -189,6 +189,23 @@ namespace Code.Gameplay.Features.Physics
     public float Timestamp;
   }
 
+  /// <summary>
+  /// Launch boost applied by ramps or other launchers.
+  /// While active, physics velocity override is disabled.
+  /// </summary>
+  [Game]
+  public class LaunchBoost : IComponent
+  {
+    /// <summary>Additional velocity from launch</summary>
+    public Vector3 BoostVelocity;
+
+    /// <summary>Time when launch started</summary>
+    public float StartTime;
+
+    /// <summary>Duration of launch effect</summary>
+    public float Duration;
+  }
+
   #endregion
 
   #region Settings

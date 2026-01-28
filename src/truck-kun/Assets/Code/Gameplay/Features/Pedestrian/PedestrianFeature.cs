@@ -194,27 +194,95 @@ namespace Code.Gameplay.Features.Pedestrian
 
     public PedestrianKind SelectRandomKind()
     {
+      return SelectRandomKind(null);
+    }
+
+    /// <summary>
+    /// Select random pedestrian kind, filtered by allowed types.
+    /// Skips types that don't have a prefab assigned.
+    /// </summary>
+    public PedestrianKind SelectRandomKind(List<PedestrianKind> allowedKinds)
+    {
       if (_spawnWeights.Count == 0)
         return PedestrianKind.StudentNerd;
 
-      float totalWeight = 0f;
+      // Build filtered list of spawn weights
+      List<PedestrianSpawnWeight> filtered = new();
       foreach (PedestrianSpawnWeight sw in _spawnWeights)
+      {
+        // Skip if not in allowed list (when list is specified)
+        if (allowedKinds != null && allowedKinds.Count > 0 && !allowedKinds.Contains(sw.Kind))
+          continue;
+
+        // Skip if no prefab assigned
+        if (!HasPrefab(sw.Kind))
+          continue;
+
+        filtered.Add(sw);
+      }
+
+      // Fallback: if all filtered out, try to find any type with prefab
+      if (filtered.Count == 0)
+      {
+        foreach (PedestrianSpawnWeight sw in _spawnWeights)
+        {
+          if (HasPrefab(sw.Kind))
+          {
+            Debug.LogWarning($"[PedestrianConfig] No allowed types have prefabs, falling back to {sw.Kind}");
+            return sw.Kind;
+          }
+        }
+        Debug.LogError("[PedestrianConfig] No pedestrian prefabs assigned! Assign prefabs in PedestrianConfig.");
+        return PedestrianKind.StudentNerd;
+      }
+
+      // Calculate total weight
+      float totalWeight = 0f;
+      foreach (PedestrianSpawnWeight sw in filtered)
         totalWeight += sw.Weight;
 
       if (totalWeight <= 0f)
-        return _spawnWeights[0].Kind;
+        return filtered[0].Kind;
 
+      // Weighted random selection
       float random = UnityEngine.Random.value * totalWeight;
       float cumulative = 0f;
 
-      foreach (PedestrianSpawnWeight sw in _spawnWeights)
+      foreach (PedestrianSpawnWeight sw in filtered)
       {
         cumulative += sw.Weight;
         if (random <= cumulative)
           return sw.Kind;
       }
 
-      return _spawnWeights[^1].Kind;
+      return filtered[^1].Kind;
+    }
+
+    /// <summary>
+    /// Check if a pedestrian kind has a prefab assigned
+    /// </summary>
+    public bool HasPrefab(PedestrianKind kind)
+    {
+      foreach (PedestrianVisualData data in _visualData)
+      {
+        if (data.Kind == kind)
+          return data.Prefab != null;
+      }
+      return false;
+    }
+
+    /// <summary>
+    /// Get list of kinds that have prefabs assigned
+    /// </summary>
+    public List<PedestrianKind> GetAvailableKinds()
+    {
+      List<PedestrianKind> available = new();
+      foreach (PedestrianVisualData data in _visualData)
+      {
+        if (data.Prefab != null)
+          available.Add(data.Kind);
+      }
+      return available;
     }
   }
 
@@ -232,6 +300,10 @@ namespace Code.Gameplay.Features.Pedestrian
     public int MaxActive = 12;
     public float LateralMargin = 0.5f;
 
+    [Header("Allowed Pedestrian Types")]
+    [Tooltip("Which pedestrian types can spawn on this level. Empty = all types.")]
+    public List<PedestrianKind> AllowedKinds = new();
+
     [Header("Crossing Behavior")]
     [Range(0f, 1f)] public float CrossingChance = 0.3f;
     public float CrossingSpeedMultiplier = 1f;
@@ -240,6 +312,18 @@ namespace Code.Gameplay.Features.Pedestrian
 
     [Header("Crossing Visual")]
     public bool RotateToCrossingDirection = true;
+
+    /// <summary>
+    /// Check if a pedestrian kind is allowed on this level
+    /// </summary>
+    public bool IsKindAllowed(PedestrianKind kind)
+    {
+      // Empty list = all types allowed
+      if (AllowedKinds == null || AllowedKinds.Count == 0)
+        return true;
+
+      return AllowedKinds.Contains(kind);
+    }
   }
 
   #endregion
@@ -251,7 +335,9 @@ namespace Code.Gameplay.Features.Pedestrian
     GameObject CreatePedestrianVisual(PedestrianKind kind, Vector3 position);
     PedestrianVisualData GetVisualData(PedestrianKind kind);
     PedestrianKind SelectRandomKind();
+    PedestrianKind SelectRandomKind(List<PedestrianKind> allowedKinds);
     bool IsProtected(PedestrianKind kind);
+    bool HasPrefab(PedestrianKind kind);
   }
 
   public class PedestrianFactory : IPedestrianFactory
@@ -312,6 +398,16 @@ namespace Code.Gameplay.Features.Pedestrian
     public PedestrianKind SelectRandomKind()
     {
       return _config.SelectRandomKind();
+    }
+
+    public PedestrianKind SelectRandomKind(List<PedestrianKind> allowedKinds)
+    {
+      return _config.SelectRandomKind(allowedKinds);
+    }
+
+    public bool HasPrefab(PedestrianKind kind)
+    {
+      return _config.HasPrefab(kind);
     }
 
     public bool IsProtected(PedestrianKind kind)
@@ -476,7 +572,13 @@ namespace Code.Gameplay.Features.Pedestrian
 
     private void SpawnPedestrian(Vector3 heroPosition)
     {
-      PedestrianKind kind = _factory.SelectRandomKind();
+      // Use allowed kinds from level settings (empty = all types)
+      PedestrianKind kind = _factory.SelectRandomKind(_settings.AllowedKinds);
+
+      // Skip spawn if no valid prefab (SelectRandomKind logs error)
+      if (!_factory.HasPrefab(kind))
+        return;
+
       PedestrianVisualData visualData = _factory.GetVisualData(kind);
 
       GameEntity entity = _game.CreateEntity();
@@ -521,6 +623,13 @@ namespace Code.Gameplay.Features.Pedestrian
 
       // Create visual
       GameObject visual = _factory.CreatePedestrianVisual(kind, position);
+
+      // If visual creation failed (no prefab), destroy entity and skip
+      if (visual == null)
+      {
+        entity.Destroy();
+        return;
+      }
 
       // Rotate crossing pedestrians to face their direction
       if (isCrossing && _settings.RotateToCrossingDirection)

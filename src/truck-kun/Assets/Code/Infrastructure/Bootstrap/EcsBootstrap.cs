@@ -255,9 +255,13 @@ namespace Code.Infrastructure.Bootstrap
           Rigidbody[] rbs = comp.GetComponentsInChildren<Rigidbody>();
           foreach (Rigidbody rb in rbs)
           {
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-            rb.isKinematic = true;
+            // Only set velocity on non-kinematic bodies (kinematic doesn't support it)
+            if (!rb.isKinematic)
+            {
+              rb.linearVelocity = Vector3.zero;
+              rb.angularVelocity = Vector3.zero;
+              rb.isKinematic = true;
+            }
           }
         }
       }

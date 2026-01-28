@@ -493,6 +493,8 @@ namespace Code.Gameplay.Features.Physics
   ///
   /// We set velocity directly (not AddForce) for precise control
   /// in an auto-runner game where responsiveness is key.
+  ///
+  /// When LaunchBoost is active, preserves physics velocity for jumps/ramps.
   /// </summary>
   public class ApplyPhysicsVelocitySystem : IExecuteSystem
   {
@@ -528,11 +530,38 @@ namespace Code.Gameplay.Features.Physics
         Vector3 targetVelocity = entity.physicsVelocity.Value;
         Vector3 currentVelocity = rb.linearVelocity;
 
+        // Check if entity has active launch boost
+        if (entity.hasLaunchBoost)
+        {
+          LaunchBoost boost = entity.launchBoost;
+          float elapsed = Time.time - boost.StartTime;
+
+          if (elapsed < boost.Duration)
+          {
+            // During launch: preserve physics velocity, don't override
+            // Only gently guide X towards target for steering control
+            float blendFactor = elapsed / boost.Duration; // 0 at start, 1 at end
+            float xVelocity = Mathf.Lerp(currentVelocity.x, targetVelocity.x, blendFactor * 0.5f);
+
+            rb.linearVelocity = new Vector3(xVelocity, currentVelocity.y, currentVelocity.z);
+
+            Debug.Log($"[ApplyPhysicsVelocity] Launch active: {elapsed:F2}/{boost.Duration:F2}s, vel={rb.linearVelocity}");
+            continue;
+          }
+          else
+          {
+            // Launch finished, remove component
+            entity.RemoveLaunchBoost();
+            Debug.Log("[ApplyPhysicsVelocity] Launch finished");
+          }
+        }
+
+        // Normal velocity application
         // Apply our calculated X and Z velocity
-        // Preserve Y velocity for any vertical physics (collisions, slopes)
+        // Preserve Y velocity for gravity and vertical physics
         Vector3 newVelocity = new Vector3(
           targetVelocity.x,
-          currentVelocity.y, // Preserve Y from physics
+          currentVelocity.y, // Preserve Y from physics (gravity)
           targetVelocity.z
         );
 

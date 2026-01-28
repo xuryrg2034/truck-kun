@@ -202,8 +202,8 @@ namespace Code.Gameplay.Features.Hero
       rb.linearDamping = 0f;  // We handle drag in our physics system
       rb.angularDamping = settings.AngularDrag;
 
-      // Gravity (disabled for 2.5D runner)
-      rb.useGravity = false;
+      // Enable gravity for ramps and jumps
+      rb.useGravity = true;
 
       // Not kinematic - we want physics simulation
       rb.isKinematic = false;
@@ -216,9 +216,8 @@ namespace Code.Gameplay.Features.Hero
         ? CollisionDetectionMode.Continuous
         : CollisionDetectionMode.Discrete;
 
-      // Constraints: freeze Y position (no falling), freeze X and Z rotation (no tipping)
+      // Constraints: freeze X and Z rotation only (allow Y movement for ramps)
       rb.constraints =
-        RigidbodyConstraints.FreezePositionY |
         RigidbodyConstraints.FreezeRotationX |
         RigidbodyConstraints.FreezeRotationZ;
     }

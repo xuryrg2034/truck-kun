@@ -164,14 +164,13 @@ namespace Code.Infrastructure.View
       rb.mass = 1000f;
       rb.linearDamping = 0f;
       rb.angularDamping = 0.05f;
-      rb.useGravity = false;
+      rb.useGravity = true;  // Enable gravity for ramps/jumps
       rb.isKinematic = false;
       rb.interpolation = RigidbodyInterpolation.Interpolate;
       rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
 
-      // Freeze Y position and X/Z rotation for 2.5D runner
+      // Freeze X/Z rotation only (allow Y movement for ramps)
       rb.constraints =
-        RigidbodyConstraints.FreezePositionY |
         RigidbodyConstraints.FreezeRotationX |
         RigidbodyConstraints.FreezeRotationZ;
 

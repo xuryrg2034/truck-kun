@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 454611034830696173}
   - component: {fileID: 8992265190204672781}
   - component: {fileID: 6494630830041855227}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Wheel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -100,7 +100,7 @@ GameObject:
   - component: {fileID: 3771511463525717632}
   - component: {fileID: 3164794783102519982}
   - component: {fileID: 7873362750455488778}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: HeadlightR
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -189,7 +189,7 @@ GameObject:
   - component: {fileID: 7691541176751900966}
   - component: {fileID: 8858970626244470214}
   - component: {fileID: 30857720514942652}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Cabin
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -278,7 +278,7 @@ GameObject:
   - component: {fileID: 11313855417891648}
   - component: {fileID: 3388912326594350711}
   - component: {fileID: 612473821091866821}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: CargoBed
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -367,7 +367,7 @@ GameObject:
   - component: {fileID: 6880657760909978700}
   - component: {fileID: 7239966726640842468}
   - component: {fileID: 5212745012177831474}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Wheel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -456,7 +456,7 @@ GameObject:
   - component: {fileID: 6243645801448999809}
   - component: {fileID: 6039386990947753185}
   - component: {fileID: 1820635006763063118}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Wheel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -545,7 +545,7 @@ GameObject:
   - component: {fileID: 3085219915539377722}
   - component: {fileID: 7567003249354876198}
   - component: {fileID: 4162022304212590215}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Windshield
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -634,7 +634,7 @@ GameObject:
   - component: {fileID: 9157690698053444384}
   - component: {fileID: 6976552171197301194}
   - component: {fileID: 5465049119786691969}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Wheel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -723,7 +723,7 @@ GameObject:
   - component: {fileID: 250416760350471473}
   - component: {fileID: 6719770641673404093}
   - component: {fileID: 8933035803720982792}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Wheel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -812,7 +812,7 @@ GameObject:
   - component: {fileID: 2432455574649323177}
   - component: {fileID: 7228845808112257057}
   - component: {fileID: 5728428363309451534}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Wheel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -901,7 +901,7 @@ GameObject:
   - component: {fileID: 3207024276455283629}
   - component: {fileID: 5902411516393051554}
   - component: {fileID: 6482039126577941022}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Bumper
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -990,7 +990,7 @@ GameObject:
   - component: {fileID: 4091892302994872699}
   - component: {fileID: 4675125656631000968}
   - component: {fileID: 4136520032953694363}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: HeadlightL
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1081,7 +1081,7 @@ GameObject:
   - component: {fileID: 3100951380779720057}
   - component: {fileID: 227733861563055921}
   - component: {fileID: 2110476914645058187}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: PlayerTruck
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1175,7 +1175,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 1
 --- !u!114 &2110476914645058187
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1209,7 +1209,7 @@ GameObject:
   - component: {fileID: 1854563885427687925}
   - component: {fileID: 5209168818597016987}
   - component: {fileID: 1415521065544510272}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Grill
   m_TagString: Untagged
   m_Icon: {fileID: 0}

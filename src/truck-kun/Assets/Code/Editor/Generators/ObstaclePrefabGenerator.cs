@@ -24,6 +24,11 @@ namespace Code.Editor.Generators
       public const float RampLength = 3f;
       public const float RampHeight = 0.8f;
 
+      // Ramp Boost
+      public const float RampForwardBoost = 5f;
+      public const float RampUpwardBoost = 8f;
+      public const float RampLaunchDuration = 1.0f;
+
       // Barrier
       public const float BarrierMass = 200f;
       public const float BarrierDrag = 2f;
@@ -67,44 +72,81 @@ namespace Code.Editor.Generators
 
       GameObject ramp = new GameObject("Ramp");
 
-      // Create ramp visual (rotated cube)
-      GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Cube);
-      visual.name = "Visual";
-      visual.transform.SetParent(ramp.transform);
-      visual.transform.localScale = new Vector3(Defaults.RampWidth, 0.1f, Defaults.RampLength);
-      visual.transform.localPosition = new Vector3(0f, Defaults.RampHeight * 0.5f, 0f);
-      visual.transform.localRotation = Quaternion.Euler(-Defaults.RampAngle, 0f, 0f);
+      // === PHYSICAL SURFACE ===
+      // Create ramp surface (rotated cube that truck drives on)
+      GameObject surface = GameObject.CreatePrimitive(PrimitiveType.Cube);
+      surface.name = "Surface";
+      surface.transform.SetParent(ramp.transform);
 
-      // Remove default collider from visual
-      Object.DestroyImmediate(visual.GetComponent<Collider>());
+      // Calculate ramp dimensions
+      float rampLength = Defaults.RampLength;
+      float surfaceThickness = 0.2f;
 
-      // Add box collider to root (angled)
-      BoxCollider collider = ramp.AddComponent<BoxCollider>();
-      collider.size = new Vector3(Defaults.RampWidth, 0.1f, Defaults.RampLength);
-      collider.center = new Vector3(0f, Defaults.RampHeight * 0.5f, 0f);
+      // Position and rotate the surface to create a slope
+      surface.transform.localScale = new Vector3(Defaults.RampWidth, surfaceThickness, rampLength);
+      surface.transform.localRotation = Quaternion.Euler(-Defaults.RampAngle, 0f, 0f);
 
-      // Rotate the entire object to create ramp angle
-      ramp.transform.rotation = Quaternion.Euler(-Defaults.RampAngle, 0f, 0f);
+      // Position so the bottom-front edge is at origin
+      float angleRad = Defaults.RampAngle * Mathf.Deg2Rad;
+      float centerZ = (rampLength * 0.5f) * Mathf.Cos(angleRad);
+      float centerY = (rampLength * 0.5f) * Mathf.Sin(angleRad);
+      surface.transform.localPosition = new Vector3(0f, centerY, centerZ);
 
       // Set material (gray concrete)
       Material mat = CreateMaterial("Ramp_Mat", new Color(0.5f, 0.5f, 0.5f));
-      visual.GetComponent<Renderer>().sharedMaterial = mat;
+      surface.GetComponent<Renderer>().sharedMaterial = mat;
 
-      // Add ObstacleBehaviour with settings
-      ObstacleBehaviour behaviour = ramp.AddComponent<ObstacleBehaviour>();
-      SetObstacleBehaviourValues(behaviour, ObstacleKind.Ramp, isPassable: true,
-        rampAngle: Defaults.RampAngle);
+      // === BOOST ZONE (trigger at the top) ===
+      GameObject boostZone = new GameObject("BoostZone");
+      boostZone.transform.SetParent(ramp.transform);
+
+      // Position at the top/end of the ramp
+      float topZ = rampLength * Mathf.Cos(angleRad);
+      float topY = rampLength * Mathf.Sin(angleRad);
+      boostZone.transform.localPosition = new Vector3(0f, topY + 0.5f, topZ);
+
+      // Add trigger collider
+      BoxCollider boostCollider = boostZone.AddComponent<BoxCollider>();
+      boostCollider.size = new Vector3(Defaults.RampWidth, 2f, 1f);
+      boostCollider.isTrigger = true;
+
+      // Add BoostZoneBehaviour
+      BoostZoneBehaviour boostBehaviour = boostZone.AddComponent<BoostZoneBehaviour>();
+      SetBoostZoneValues(boostBehaviour,
+        forwardBoost: Defaults.RampForwardBoost,
+        upwardBoost: Defaults.RampUpwardBoost,
+        launchDuration: Defaults.RampLaunchDuration);
 
       // Set layer
       SetLayerRecursive(ramp, ObstacleLayer);
 
-      // Reset rotation before saving (rotation is part of design)
-      ramp.transform.rotation = Quaternion.Euler(-Defaults.RampAngle, 0f, 0f);
-
       SavePrefab(ramp, "Ramp");
       Object.DestroyImmediate(ramp);
 
-      Debug.Log("[ObstacleGenerator] Ramp prefab created");
+      Debug.Log("[ObstacleGenerator] Ramp prefab created (physical surface + boost zone)");
+    }
+
+    private static void SetBoostZoneValues(
+      BoostZoneBehaviour behaviour,
+      float forwardBoost,
+      float upwardBoost,
+      float launchDuration)
+    {
+      SerializedObject so = new SerializedObject(behaviour);
+
+      SerializedProperty forwardProp = so.FindProperty("_forwardBoost");
+      if (forwardProp != null)
+        forwardProp.floatValue = forwardBoost;
+
+      SerializedProperty upwardProp = so.FindProperty("_upwardBoost");
+      if (upwardProp != null)
+        upwardProp.floatValue = upwardBoost;
+
+      SerializedProperty durationProp = so.FindProperty("_launchDuration");
+      if (durationProp != null)
+        durationProp.floatValue = launchDuration;
+
+      so.ApplyModifiedPropertiesWithoutUndo();
     }
 
     [MenuItem("Truck-kun/Generate Obstacle Prefabs/Barrier")]
@@ -239,7 +281,6 @@ namespace Code.Editor.Generators
       ObstacleBehaviour behaviour,
       ObstacleKind kind,
       bool isPassable,
-      float rampAngle = 15f,
       float barrierMass = 200f,
       float barrierSpeedPenalty = 0.3f,
       float speedBumpImpulse = 200f,
@@ -258,11 +299,6 @@ namespace Code.Editor.Generators
       SerializedProperty passableProp = so.FindProperty("_isPassable");
       if (passableProp != null)
         passableProp.boolValue = isPassable;
-
-      // Ramp settings
-      SerializedProperty rampAngleProp = so.FindProperty("_rampAngle");
-      if (rampAngleProp != null)
-        rampAngleProp.floatValue = rampAngle;
 
       // Barrier settings
       SerializedProperty barrierMassProp = so.FindProperty("_barrierMass");

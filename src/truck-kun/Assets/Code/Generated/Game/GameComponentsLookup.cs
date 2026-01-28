@@ -19,24 +19,29 @@ public static class GameComponentsLookup {
     public const int Hero = 8;
     public const int MoveDirection = 9;
     public const int MoveSpeed = 10;
-    public const int CrossingPedestrian = 11;
-    public const int Pedestrian = 12;
-    public const int PedestrianType = 13;
-    public const int Acceleration = 14;
-    public const int OnSurface = 15;
-    public const int PhysicsBody = 16;
-    public const int PhysicsConstraints = 17;
-    public const int PhysicsDrag = 18;
-    public const int PhysicsImpact = 19;
-    public const int PhysicsState = 20;
-    public const int PhysicsVelocity = 21;
-    public const int Rigidbody = 22;
-    public const int SurfaceModifier = 23;
-    public const int SurfaceZone = 24;
-    public const int ViolationEvent = 25;
-    public const int Ragdolled = 26;
+    public const int Obstacle = 11;
+    public const int ObstacleType = 12;
+    public const int Passable = 13;
+    public const int SpeedPenalty = 14;
+    public const int CrossingPedestrian = 15;
+    public const int Pedestrian = 16;
+    public const int PedestrianType = 17;
+    public const int Acceleration = 18;
+    public const int LaunchBoost = 19;
+    public const int OnSurface = 20;
+    public const int PhysicsBody = 21;
+    public const int PhysicsConstraints = 22;
+    public const int PhysicsDrag = 23;
+    public const int PhysicsImpact = 24;
+    public const int PhysicsState = 25;
+    public const int PhysicsVelocity = 26;
+    public const int Rigidbody = 27;
+    public const int SurfaceModifier = 28;
+    public const int SurfaceZone = 29;
+    public const int ViolationEvent = 30;
+    public const int Ragdolled = 31;
 
-    public const int TotalComponents = 27;
+    public const int TotalComponents = 32;
 
     public static readonly string[] componentNames = {
         "Id",
@@ -50,10 +55,15 @@ public static class GameComponentsLookup {
         "Hero",
         "MoveDirection",
         "MoveSpeed",
+        "Obstacle",
+        "ObstacleType",
+        "Passable",
+        "SpeedPenalty",
         "CrossingPedestrian",
         "Pedestrian",
         "PedestrianType",
         "Acceleration",
+        "LaunchBoost",
         "OnSurface",
         "PhysicsBody",
         "PhysicsConstraints",
@@ -80,10 +90,15 @@ public static class GameComponentsLookup {
         typeof(Code.Gameplay.Features.Hero.Hero),
         typeof(Code.Gameplay.Features.Movement.MoveDirection),
         typeof(Code.Gameplay.Features.Movement.MoveSpeed),
+        typeof(Code.Gameplay.Features.Obstacle.Obstacle),
+        typeof(Code.Gameplay.Features.Obstacle.ObstacleType),
+        typeof(Code.Gameplay.Features.Obstacle.Passable),
+        typeof(Code.Gameplay.Features.Obstacle.SpeedPenalty),
         typeof(Code.Gameplay.Features.Pedestrian.CrossingPedestrian),
         typeof(Code.Gameplay.Features.Pedestrian.Pedestrian),
         typeof(Code.Gameplay.Features.Pedestrian.PedestrianType),
         typeof(Code.Gameplay.Features.Physics.Acceleration),
+        typeof(Code.Gameplay.Features.Physics.LaunchBoost),
         typeof(Code.Gameplay.Features.Physics.OnSurface),
         typeof(Code.Gameplay.Features.Physics.PhysicsBody),
         typeof(Code.Gameplay.Features.Physics.PhysicsConstraints),

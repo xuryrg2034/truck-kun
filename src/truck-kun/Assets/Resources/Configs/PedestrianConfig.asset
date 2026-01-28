@@ -17,47 +17,11 @@ MonoBehaviour:
     Kind: 0
     Color: {r: 0.95, g: 0.95, b: 1, a: 1}
     Scale: 0.85
-    Speed: 1
-    ForwardTilt: 15
+    Speed: 2
+    ForwardTilt: 0
     BaseSpeed: 2
     Category: 0
     DisplayName: Student
-  - Prefab: {fileID: 5756689042150815301, guid: e1774317e0eed2e4288d0e8f88df53dc, type: 3}
-    Kind: 1
-    Color: {r: 0.4, g: 0.4, b: 0.45, a: 1}
-    Scale: 1
-    Speed: 1
-    ForwardTilt: 0
-    BaseSpeed: 1.8
-    Category: 0
-    DisplayName: Salaryman
-  - Prefab: {fileID: 5239283888830579918, guid: 4b7467b80b14d71428a2c388e5e46ec4, type: 3}
-    Kind: 2
-    Color: {r: 1, g: 0.7, b: 0.8, a: 1}
-    Scale: 0.8
-    Speed: 1
-    ForwardTilt: 10
-    BaseSpeed: 0.8
-    Category: 1
-    DisplayName: Grandma
-  - Prefab: {fileID: 5239283888830579918, guid: 25a617f8c517e01429ee3dd8cd169907, type: 3}
-    Kind: 3
-    Color: {r: 0.6, g: 0.45, b: 0.3, a: 1}
-    Scale: 0.9
-    Speed: 1
-    ForwardTilt: 8
-    BaseSpeed: 0.9
-    Category: 1
-    DisplayName: Old Man
-  - Prefab: {fileID: 2391119147759263486, guid: 2a2e1e9449424eb4ca7f6c5d8dcf9bb6, type: 3}
-    Kind: 4
-    Color: {r: 0.2, g: 0.8, b: 0.4, a: 1}
-    Scale: 0.95
-    Speed: 1
-    ForwardTilt: -5
-    BaseSpeed: 2.2
-    Category: 0
-    DisplayName: Teenager
   _spawnWeights:
   - Kind: 0
     Weight: 0.25
