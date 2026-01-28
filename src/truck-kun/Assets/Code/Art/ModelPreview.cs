@@ -1,3 +1,4 @@
+using Code.Art.Procedural;
 using Code.Gameplay.Features.Pedestrian;
 using UnityEngine;
 

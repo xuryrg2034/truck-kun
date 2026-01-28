@@ -13,7 +13,8 @@
       "WebFetch(domain:mixkit.co)",
       "WebSearch",
       "Bash(dir \"C:\\\\Projects\\\\home\\\\unity\\\\Truck-kun\\\\src\\\\truck-kun\\\\Assets\\\\Audio\")",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(git mv:*)"
     ]
   }
 }

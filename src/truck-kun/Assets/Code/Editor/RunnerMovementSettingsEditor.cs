@@ -211,7 +211,7 @@ namespace Code.Editor
 
       // Find RunnerMovementSettings through Zenject container or direct reference
       // This is a simplified approach - in production you'd use proper DI
-      var bootstrap = FindObjectOfType<Code.Infrastructure.EcsBootstrap>();
+      var bootstrap = FindObjectOfType<Code.Infrastructure.Bootstrap.EcsBootstrap>();
       if (bootstrap == null)
       {
         Debug.LogWarning("[Editor] EcsBootstrap not found");

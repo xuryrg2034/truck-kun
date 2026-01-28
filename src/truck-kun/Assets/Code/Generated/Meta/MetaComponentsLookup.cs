@@ -33,7 +33,7 @@ public static class MetaComponentsLookup {
     };
 
     public static readonly System.Type[] componentTypes = {
-        typeof(Code.Common.Id),
+        typeof(Code.Common.Components.Id),
         typeof(Code.Gameplay.Features.Economy.EarnedThisDay),
         typeof(Code.Gameplay.Features.Economy.PenaltiesThisDay),
         typeof(Code.Gameplay.Features.Economy.PlayerMoney),

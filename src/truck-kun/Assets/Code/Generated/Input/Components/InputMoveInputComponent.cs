@@ -33,13 +33,13 @@ public sealed partial class InputMatcher {
 //------------------------------------------------------------------------------
 public partial class InputEntity {
 
-    public Code.Gameplay.Input.MoveInput moveInput { get { return (Code.Gameplay.Input.MoveInput)GetComponent(InputComponentsLookup.MoveInput); } }
+    public Code.Gameplay.Features.Input.MoveInput moveInput { get { return (Code.Gameplay.Features.Input.MoveInput)GetComponent(InputComponentsLookup.MoveInput); } }
     public UnityEngine.Vector2 MoveInput { get { return moveInput.Value; } }
     public bool hasMoveInput { get { return HasComponent(InputComponentsLookup.MoveInput); } }
 
     public InputEntity AddMoveInput(UnityEngine.Vector2 newValue) {
         var index = InputComponentsLookup.MoveInput;
-        var component = (Code.Gameplay.Input.MoveInput)CreateComponent(index, typeof(Code.Gameplay.Input.MoveInput));
+        var component = (Code.Gameplay.Features.Input.MoveInput)CreateComponent(index, typeof(Code.Gameplay.Features.Input.MoveInput));
         component.Value = newValue;
         AddComponent(index, component);
         return this;
@@ -47,7 +47,7 @@ public partial class InputEntity {
 
     public InputEntity ReplaceMoveInput(UnityEngine.Vector2 newValue) {
         var index = InputComponentsLookup.MoveInput;
-        var component = (Code.Gameplay.Input.MoveInput)CreateComponent(index, typeof(Code.Gameplay.Input.MoveInput));
+        var component = (Code.Gameplay.Features.Input.MoveInput)CreateComponent(index, typeof(Code.Gameplay.Features.Input.MoveInput));
         component.Value = newValue;
         ReplaceComponent(index, component);
         return this;

@@ -3,6 +3,7 @@ using Code.DevTools;
 using Code.Gameplay.Features.Hero;
 using Code.Gameplay.Features.Physics;
 using Code.Infrastructure;
+using Code.Infrastructure.Bootstrap;
 using Entitas;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -76,7 +77,7 @@ namespace Code.DebugTools
     private void FindMovementSettings()
     {
       // Look for EcsBootstrap to get settings reference
-      var bootstrap = FindObjectOfType<Code.Infrastructure.EcsBootstrap>();
+      var bootstrap = FindObjectOfType<Code.Infrastructure.Bootstrap.EcsBootstrap>();
       if (bootstrap != null)
       {
         // Settings are private, we'll use default values for sliders

@@ -19,6 +19,62 @@
 
 ---
 
+## 2026-01-28 13:35 - Рефакторинг структуры проекта
+
+**Файлы:**
+### Документация
+- `.claude/CLAUDE.md` - упрощён, ссылка на ECS_PATTERN.md, обновлён Quick Reference
+- `.claude/ECS_PATTERN.md` - восстановлен (универсальный шаблон архитектуры)
+
+### Удалено
+- `Assets/Code/Art/VFX/NPCAnimator.cs` - удалён дубликат (оставлен Art/Animation/NPCAnimator.cs)
+
+### Перемещено (Gameplay/Features/)
+- `InputFeature.cs` → `Features/Input/`
+- `HeroFeature.cs` → `Features/Hero/`
+- `PedestrianFeature.cs` → `Features/Pedestrian/`
+- `PhysicsFeature.cs`, `PhysicsComponents.cs` → `Features/Physics/`
+- `CollisionFeature.cs`, `PhysicsCollisionHandler.cs` → `Features/Collision/`
+- `RagdollFeature.cs` → `Features/Ragdoll/`
+- `FeedbackSystem.cs` → `Features/Feedback/FeedbackFeature.cs` (переименован)
+- `QuestFeature.cs` → `Features/Quest/`
+- `EconomyFeature.cs`, `DaySession.cs` → `Features/Economy/`
+- `MovementFeature.cs` → `Features/Movement/`
+- `SurfaceFeature.cs`, `SurfaceTrigger.cs` → `Features/Surface/`
+
+### Перемещено (Common/)
+- `CommonComponents.cs` → `Common/Components/`
+- `Services.cs` → `Common/Services/`
+- `EntityHelpers.cs` → `Common/Extensions/`
+
+### Перемещено (Infrastructure/)
+- `EcsBootstrap.cs` → `Infrastructure/Bootstrap/`
+- `SystemFactory.cs`, `Feature.cs` → `Infrastructure/Systems/`
+- `EntityBehaviour.cs`, `ViewSystems.cs` → `Infrastructure/View/`
+- `CameraFollow.cs` → `Art/VFX/`
+- `PhysicsCollisionHandler.cs` → `Gameplay/Features/Collision/`
+
+### Перемещено (Art/)
+- `ModelFactory.cs`, `ProceduralMeshGenerator.cs` → `Art/Procedural/`
+
+### Обновлённые namespaces
+- `Code.Gameplay.Input` → `Code.Gameplay.Features.Input`
+- `Code.Gameplay` (DaySession) → `Code.Gameplay.Features.Economy`
+- `Code.Infrastructure.View` (PhysicsCollisionHandler) → `Code.Gameplay.Features.Collision`
+- `Code.Common` → разделён на `Code.Common.Services`, `Code.Common.Components`, `Code.Common.Extensions`
+- `Code.Infrastructure` (EcsBootstrap) → `Code.Infrastructure.Bootstrap`
+- `Code.Infrastructure.Systems` (Feature.cs) - добавлен namespace
+- `Code.Art` → `Code.Art.Procedural`
+- `Code.Infrastructure` (CameraFollow) → `Code.Art.VFX`
+
+**Причина:** Приведение структуры проекта в соответствие с ECS_PATTERN.md
+**Детали:**
+- Feature-based организация кода для масштабируемости
+- Каждая Feature в своей папке со всеми связанными файлами
+- Чёткое разделение слоёв: Common, Infrastructure, Gameplay, Art
+
+---
+
 ## 2026-01-28 11:40 - Реорганизация документации .claude/
 
 **Файлы:**

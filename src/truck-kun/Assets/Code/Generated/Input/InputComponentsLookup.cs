@@ -17,6 +17,6 @@ public static class InputComponentsLookup {
     };
 
     public static readonly System.Type[] componentTypes = {
-        typeof(Code.Gameplay.Input.MoveInput)
+        typeof(Code.Gameplay.Features.Input.MoveInput)
     };
 }

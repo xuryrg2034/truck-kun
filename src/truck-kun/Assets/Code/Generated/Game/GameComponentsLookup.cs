@@ -69,11 +69,11 @@ public static class GameComponentsLookup {
     };
 
     public static readonly System.Type[] componentTypes = {
-        typeof(Code.Common.Id),
-        typeof(Code.Common.TransformComponent),
-        typeof(Code.Common.View),
-        typeof(Code.Common.ViewPrefab),
-        typeof(Code.Common.WorldPosition),
+        typeof(Code.Common.Components.Id),
+        typeof(Code.Common.Components.TransformComponent),
+        typeof(Code.Common.Components.View),
+        typeof(Code.Common.Components.ViewPrefab),
+        typeof(Code.Common.Components.WorldPosition),
         typeof(Code.Gameplay.Features.Collision.CollisionImpact),
         typeof(Code.Gameplay.Features.Collision.Hit),
         typeof(Code.Gameplay.Features.Collision.HitEvent),

@@ -59,13 +59,13 @@ public partial class MetaEntity : IIdEntity<MetaEntity>, IIdEntity
 //------------------------------------------------------------------------------
 public partial class MetaEntity {
 
-    public Code.Common.Id id { get { return (Code.Common.Id)GetComponent(MetaComponentsLookup.Id); } }
+    public Code.Common.Components.Id id { get { return (Code.Common.Components.Id)GetComponent(MetaComponentsLookup.Id); } }
     public int Id { get { return id.Value; } }
     public bool hasId { get { return HasComponent(MetaComponentsLookup.Id); } }
 
     public MetaEntity AddId(int newValue) {
         var index = MetaComponentsLookup.Id;
-        var component = (Code.Common.Id)CreateComponent(index, typeof(Code.Common.Id));
+        var component = (Code.Common.Components.Id)CreateComponent(index, typeof(Code.Common.Components.Id));
         component.Value = newValue;
         AddComponent(index, component);
         return this;
@@ -73,7 +73,7 @@ public partial class MetaEntity {
 
     public MetaEntity ReplaceId(int newValue) {
         var index = MetaComponentsLookup.Id;
-        var component = (Code.Common.Id)CreateComponent(index, typeof(Code.Common.Id));
+        var component = (Code.Common.Components.Id)CreateComponent(index, typeof(Code.Common.Components.Id));
         component.Value = newValue;
         ReplaceComponent(index, component);
         return this;

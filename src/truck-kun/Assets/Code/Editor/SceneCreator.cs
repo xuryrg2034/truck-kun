@@ -238,7 +238,7 @@ namespace Code.Editor
       GameObject bootstrapObj = new GameObject("[EcsBootstrap]");
 
       // Try to add EcsBootstrap component
-      System.Type ecsBootstrapType = System.Type.GetType("Code.Infrastructure.EcsBootstrap, Assembly-CSharp");
+      System.Type ecsBootstrapType = System.Type.GetType("Code.Infrastructure.Bootstrap.EcsBootstrap, Assembly-CSharp");
       if (ecsBootstrapType != null)
       {
         bootstrapObj.AddComponent(ecsBootstrapType);

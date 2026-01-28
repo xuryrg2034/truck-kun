@@ -8,7 +8,7 @@ using Code.Gameplay.Features.Physics;
 using Code.Gameplay.Features.Quest;
 using Code.Gameplay.Features.Ragdoll;
 using Code.Gameplay.Features.Surface;
-using Code.Gameplay.Input;
+using Code.Gameplay.Features.Input;
 using Code.Infrastructure.Systems;
 using Code.Infrastructure.View;
 

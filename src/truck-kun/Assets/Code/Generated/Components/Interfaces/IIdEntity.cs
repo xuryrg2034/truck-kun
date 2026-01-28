@@ -9,7 +9,7 @@
 public partial interface IIdEntity<TEntity> : Entitas.IEntity where TEntity : Entitas.IEntity  {
 
     int Id { get; }
-    Code.Common.Id id { get; }
+    Code.Common.Components.Id id { get; }
     bool hasId { get; }
 
     TEntity AddId(int newValue);
