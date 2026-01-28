@@ -173,10 +173,15 @@ namespace Code.Audio
         _sfxPool.Enqueue(source);
       }
 
-      // Create default library if not assigned
+      // Load library from Resources if not assigned
       if (_library == null)
       {
-        _library = ScriptableObject.CreateInstance<AudioLibrary>();
+        _library = Resources.Load<AudioLibrary>("AudioLibrary");
+        if (_library == null)
+        {
+          Debug.LogWarning("[AudioService] AudioLibrary not found in Resources. Create one at Assets/Resources/AudioLibrary.asset");
+          _library = ScriptableObject.CreateInstance<AudioLibrary>();
+        }
       }
 
       // Load saved volumes
