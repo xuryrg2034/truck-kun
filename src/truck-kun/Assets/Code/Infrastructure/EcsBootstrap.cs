@@ -1,116 +1,81 @@
 using Code.Balance;
-using Code.Common;
 using Code.Gameplay;
-using Code.Gameplay.Features.Collision;
 using Code.Gameplay.Features.Economy;
-using Code.Gameplay.Features.Feedback;
 using Code.Gameplay.Features.Hero;
 using Code.Gameplay.Features.Pedestrian;
 using Code.Gameplay.Features.Quest;
-using Code.Gameplay.Features.Ragdoll;
-using Code.Gameplay.Features.Surface;
 using Code.Gameplay.Input;
 using Code.Infrastructure.Systems;
-using Code.Infrastructure.View;
 using Code.Meta.Difficulty;
 using Code.Meta.Upgrades;
 using Code.UI.EndDayScreen;
 using Code.UI.QuestUI;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using Zenject;
 
 namespace Code.Infrastructure
 {
+  /// <summary>
+  /// Coordinates ECS gameplay systems.
+  /// Receives all dependencies via Zenject injection from GameplaySceneInstaller.
+  /// </summary>
   public class EcsBootstrap : MonoBehaviour
   {
-    [Header("Core")]
-    [SerializeField] private InputActionAsset _inputActions;
-    [SerializeField] private Transform _heroSpawn;
-    [SerializeField] private EntityBehaviour _heroViewPrefab;
+    // Injected dependencies
+    [Inject] private Contexts _contexts;
+    [Inject] private IBalanceProvider _balanceProvider;
+    [Inject] private IDifficultyService _difficultyService;
+    [Inject] private IInputService _inputService;
+    [Inject] private IDaySessionService _daySessionService;
+    [Inject] private IMoneyService _moneyService;
+    [Inject] private IQuestService _questService;
+    [Inject] private IUpgradeService _upgradeService;
+    [Inject] private ISystemFactory _systemFactory;
 
-    [Header("Balance (Required)")]
-    [SerializeField] private GameBalance _gameBalance;
+    // Injected settings (modified in-place for difficulty/upgrades)
+    [Inject] private RunnerMovementSettings _runnerMovement;
+    [Inject] private PedestrianSpawnSettings _pedestrianSpawnSettings;
+    [Inject] private QuestSettings _questSettings;
+    [Inject] private EconomySettings _economySettings;
 
-    // Runtime settings (created from GameBalance)
-    private RunnerMovementSettings _runnerMovement;
-    private DaySessionSettings _daySessionSettings;
-    private PedestrianSpawnSettings _pedestrianSpawnSettings;
-    private CollisionSettings _collisionSettings;
-    private QuestSettings _questSettings;
-    private EconomySettings _economySettings;
-    private FeedbackSettings _feedbackSettings;
-    private SurfaceSpawnSettings _surfaceSpawnSettings;
-    private RagdollSettings _ragdollSettings;
-
-    private IBalanceProvider _balanceProvider;
-    private IDifficultyService _difficultyService;
-    private DayCounterUI _dayCounterUI;
-
-    private DiContainer _container;
+    // Runtime state
     private BattleFeature _battleFeature;
-    private IInputService _inputService;
-    private IDaySessionService _daySessionService;
-    private IMoneyService _moneyService;
-    private IQuestService _questService;
-    private IUpgradeService _upgradeService;
     private QuestUIController _questUI;
     private EndDayController _endDayController;
+    private DayCounterUI _dayCounterUI;
     private bool _dayFinishedHandled;
-    private bool _physicsEnabled = true;  // Toggle for physics system
+    private bool _physicsEnabled = true;
 
-    private void Awake()
+    [Inject]
+    public void Construct()
     {
-      // Validate required references
-      if (!ValidateRequirements())
-        return;
-
-      // Initialize from GameBalance
-      InitializeBalance();
-      CreateSettingsFromBalance();
-
-      // Load persistent state
+      // Get current day from persistent state
       GameStateService gameState = GameStateService.Instance;
       int currentDay = gameState.DayNumber;
 
-      // Initialize difficulty and apply scaling
-      InitializeDifficulty(currentDay);
+      // Apply difficulty scaling to settings
+      ApplyDifficultyScaling(currentDay);
 
       // Apply upgrades from persistent state
       ApplyUpgradesToSettings();
 
-      // Setup DI container
-      Contexts contexts = Contexts.sharedInstance;
-      _container = new DiContainer();
-
-      BindContexts(contexts);
-      BindServices();
-
-      _inputService = _container.Resolve<IInputService>();
-
-      // Initialize upgrades service
-      _upgradeService = _container.Resolve<IUpgradeService>();
+      // Initialize upgrade service
       _upgradeService.Initialize();
 
-      // Create game systems (includes PhysicsFeature for FixedUpdate)
-      ISystemFactory systems = _container.Resolve<ISystemFactory>();
-      _battleFeature = systems.Create<BattleFeature>();
+      // Create and initialize ECS systems
+      _battleFeature = _systemFactory.Create<BattleFeature>();
       _battleFeature.Initialize();
       Debug.Log("[EcsBootstrap] BattleFeature initialized (Physics runs in FixedUpdate)");
 
-      _moneyService = _container.Resolve<IMoneyService>();
-      _questService = _container.Resolve<IQuestService>();
-
       // Initialize UI
-      InitializeQuestUI(contexts);
-      InitializeEndDayScreen(contexts);
+      InitializeQuestUI();
+      InitializeEndDayScreen();
       InitializeDayCounterUI(currentDay);
 
       // Handle milestone bonus
       HandleMilestoneBonus(currentDay);
 
-      // Start day
-      _daySessionService = _container.Resolve<IDaySessionService>();
+      // Start the day
       _daySessionService.StartDay();
 
       if (_daySessionService.State == DayState.Finished)
@@ -121,207 +86,49 @@ namespace Code.Infrastructure
                 $"Difficulty: Quests={difficulty.QuestCount}, SpawnInterval={difficulty.PedestrianSpawnInterval:F2}");
     }
 
-    private bool ValidateRequirements()
+    private void ApplyDifficultyScaling(int dayNumber)
     {
-      bool valid = true;
+      _difficultyService.ApplyDifficulty(dayNumber);
+      DifficultyConfig difficulty = _difficultyService.CurrentDifficulty;
 
-      if (_inputActions == null)
-      {
-        Debug.LogError("[EcsBootstrap] InputActionAsset is missing!");
-        valid = false;
-      }
+      // Apply to pedestrian settings
+      _pedestrianSpawnSettings.SpawnInterval = difficulty.PedestrianSpawnInterval;
+      _pedestrianSpawnSettings.MaxActive = difficulty.MaxPedestrians;
+      _pedestrianSpawnSettings.CrossingChance = difficulty.CrossingChance;
 
-      if (_heroViewPrefab == null)
-      {
-        Debug.LogError("[EcsBootstrap] Hero View Prefab is missing!");
-        valid = false;
-      }
+      // Apply to movement
+      _runnerMovement.ForwardSpeed *= difficulty.ForwardSpeedMultiplier;
 
-      // Try to load GameBalance from Resources if not assigned
-      if (_gameBalance == null)
-        _gameBalance = Resources.Load<GameBalance>("Configs/GameBalance");
-
-      if (_gameBalance == null)
-      {
-        Debug.LogError("[EcsBootstrap] GameBalance is required! Create one at Assets/Resources/Configs/GameBalance.asset");
-        valid = false;
-      }
-
-      if (!valid)
-        enabled = false;
-
-      return valid;
-    }
-
-    private void InitializeBalance()
-    {
-      _balanceProvider = new BalanceProvider(_gameBalance);
-      Debug.Log("[EcsBootstrap] Using GameBalance configuration");
-    }
-
-    private void CreateSettingsFromBalance()
-    {
-      GameBalance balance = _balanceProvider.Balance;
-
-      // Movement settings (including physics parameters)
-      _runnerMovement = new RunnerMovementSettings
-      {
-        // Legacy kinematic settings
-        ForwardSpeed = balance.Movement.ForwardSpeed,
-        LateralSpeed = balance.Movement.LateralSpeed,
-        RoadWidth = balance.Movement.RoadWidth,
-
-        // Physics speed limits
-        MinForwardSpeed = balance.Movement.ForwardSpeed * 0.6f,  // 60% of forward as minimum
-        MaxForwardSpeed = balance.Movement.ForwardSpeed * 1.6f,  // 160% of forward as maximum
-        MaxLateralSpeed = balance.Movement.LateralSpeed,
-
-        // Physics acceleration (tuned for responsive feel)
-        ForwardAcceleration = 10f,
-        LateralAcceleration = 15f,
-        Deceleration = 8f,
-
-        // Physics drag
-        BaseDrag = 0.5f,
-
-        // Rigidbody settings
-        Mass = 1000f,
-        AngularDrag = 0.05f,
-        UseContinuousCollision = true
-      };
-
-      // Collision settings
-      _collisionSettings = new CollisionSettings
-      {
-        HitRadius = balance.Movement.HitRadius,
-        UsePhysicsCollision = true,  // Use physics-based collision (OnCollisionEnter)
-        MinImpactForce = 0.5f,
-        StrongImpactForce = 5f
-      };
-
-      // Pedestrian settings
-      _pedestrianSpawnSettings = new PedestrianSpawnSettings
-      {
-        SpawnInterval = balance.Pedestrians.SpawnInterval,
-        SpawnDistanceAhead = balance.Pedestrians.SpawnDistanceAhead,
-        DespawnDistanceBehind = balance.Pedestrians.DespawnDistanceBehind,
-        MaxActive = balance.Pedestrians.MaxActive,
-        LateralMargin = balance.Pedestrians.LateralMargin,
-        CrossingChance = balance.Pedestrians.CrossingChance,
-        CrossingSpeedMultiplier = balance.Pedestrians.CrossingSpeedMultiplier,
-        SidewalkOffset = balance.Pedestrians.SidewalkOffset
-      };
-
-      // Day settings
-      _daySessionSettings = new DaySessionSettings
-      {
-        DurationSeconds = balance.Day.DurationSeconds
-      };
-
-      // Quest settings
-      _questSettings = new QuestSettings
-      {
-        MinQuestsPerDay = balance.Day.MinQuestsPerDay,
-        MaxQuestsPerDay = balance.Day.MaxQuestsPerDay
-      };
-
-      // Economy settings
-      _economySettings = new EconomySettings
-      {
-        StartingMoney = balance.Economy.StartingMoney,
-        ViolationPenalty = balance.Economy.ViolationPenalty,
-        BaseQuestReward = balance.Economy.BaseQuestReward
-      };
-
-      // Feedback settings
-      _feedbackSettings = new FeedbackSettings
-      {
-        ParticleBurstCount = balance.Feedback.ParticleBurstCount,
-        ParticleLifetime = balance.Feedback.ParticleLifetime,
-        ParticleSpeed = balance.Feedback.ParticleSpeed,
-        ParticleGravity = balance.Feedback.ParticleGravity,
-        ParticleSize = balance.Feedback.ParticleSize,
-        FloatSpeed = balance.Feedback.FloatSpeed,
-        FloatDuration = balance.Feedback.FloatDuration,
-        FontSize = balance.Feedback.FontSize,
-        RewardColor = balance.Feedback.RewardColor,
-        PenaltyColor = balance.Feedback.PenaltyColor
-      };
-
-      // Surface hazard settings (manual placement - spawning disabled)
-      _surfaceSpawnSettings = new SurfaceSpawnSettings
-      {
-        EnableSpawning = false,  // Surfaces are placed manually in scene
-        SpawnChance = 0.2f,
-        MinSpawnInterval = 25f,
-        MaxSpawnInterval = 50f,
-        MinLength = 4f,
-        MaxLength = 10f,
-        Width = 2.5f,
-        SpawnDistanceAhead = 60f,
-        DespawnDistanceBehind = 25f,
-        LateralMargin = 0.5f,
-        OilWeight = 1f,
-        GrassWeight = 0.6f,
-        PuddleWeight = 0.8f,
-        IceWeight = 0.1f,
-        HeightOffset = 0.02f
-      };
-
-      // Ragdoll settings for hit pedestrians
-      _ragdollSettings = new RagdollSettings
-      {
-        HitForce = 800f,
-        UpwardForce = 300f,
-        TorqueForce = 200f,
-        DespawnDelay = 2.5f,
-        FadeStartDelay = 1.5f,
-        MaxActiveRagdolls = 5,
-        RagdollDrag = 0.5f,
-        RagdollAngularDrag = 0.5f,
-        EnableFadeOut = true
-      };
+      // Apply to quests
+      _questSettings.MinQuestsPerDay = difficulty.QuestCount;
+      _questSettings.MaxQuestsPerDay = difficulty.QuestCount;
     }
 
     private void ApplyUpgradesToSettings()
     {
       GameStateService state = GameStateService.Instance;
 
-      // Apply speed upgrade (affects forward speed for both kinematic and physics)
+      // Apply speed upgrade
       float speedBonus = GetUpgradeBonus(UpgradeType.SpeedBoost, state.GetUpgradeLevel(UpgradeType.SpeedBoost));
       if (speedBonus > 0)
       {
         float multiplier = 1f + speedBonus;
-
-        // Legacy kinematic speed
         _runnerMovement.ForwardSpeed *= multiplier;
-
-        // Physics speed limits
         _runnerMovement.MinForwardSpeed *= multiplier;
         _runnerMovement.MaxForwardSpeed *= multiplier;
-
-        // Slightly increase acceleration to match higher speeds
         _runnerMovement.ForwardAcceleration *= (1f + speedBonus * 0.5f);
-
         Debug.Log($"[Upgrades] SpeedBoost applied: +{speedBonus * 100:F0}% speed");
       }
 
-      // Apply maneuverability upgrade (affects lateral control)
+      // Apply maneuverability upgrade
       float lateralBonus = GetUpgradeBonus(UpgradeType.Maneuverability, state.GetUpgradeLevel(UpgradeType.Maneuverability));
       if (lateralBonus > 0)
       {
         float multiplier = 1f + lateralBonus;
-
-        // Legacy kinematic lateral speed
         _runnerMovement.LateralSpeed *= multiplier;
-
-        // Physics lateral parameters
         _runnerMovement.MaxLateralSpeed *= multiplier;
         _runnerMovement.LateralAcceleration *= multiplier;
-
-        // Better deceleration for improved control
         _runnerMovement.Deceleration *= (1f + lateralBonus * 0.3f);
-
         Debug.Log($"[Upgrades] Maneuverability applied: +{lateralBonus * 100:F0}% lateral control");
       }
 
@@ -336,87 +143,6 @@ namespace Code.Infrastructure
 
       UpgradeDefinitionBalance upgrade = _balanceProvider.Balance.GetUpgrade(type);
       return upgrade?.GetBonus(level) ?? 0f;
-    }
-
-    private void BindContexts(Contexts contexts)
-    {
-      _container.BindInstance(contexts).AsSingle();
-      _container.BindInstance(contexts.game).AsSingle();
-      _container.BindInstance(contexts.input).AsSingle();
-      _container.BindInstance(contexts.meta).AsSingle();
-    }
-
-    private void BindServices()
-    {
-      // Core services
-      _container.BindInstance(_inputActions).AsSingle();
-      _container.Bind<IInputService>().To<InputSystemService>().AsSingle();
-      _container.Bind<IIdentifierService>().To<IdentifierService>().AsSingle();
-      _container.Bind<ITimeService>().To<UnityTimeService>().AsSingle();
-
-      // Balance
-      _container.BindInstance(_balanceProvider).AsSingle();
-      _container.BindInstance(_difficultyService).AsSingle();
-
-      // Settings
-      _container.BindInstance(_runnerMovement).AsSingle();
-      _container.BindInstance(_daySessionSettings).AsSingle();
-      _container.BindInstance(_pedestrianSpawnSettings).AsSingle();
-      _container.BindInstance(_collisionSettings).AsSingle();
-      _container.BindInstance(_questSettings).AsSingle();
-      _container.BindInstance(_economySettings).AsSingle();
-      _container.BindInstance(_feedbackSettings).AsSingle();
-      _container.BindInstance(_surfaceSpawnSettings).AsSingle();
-      _container.BindInstance(_ragdollSettings).AsSingle();
-
-      // Day service
-      _container.Bind<IDaySessionService>().To<DaySessionService>().AsSingle();
-
-      // Pedestrian factory
-      PedestrianFactory pedestrianFactory = new PedestrianFactory(null, _balanceProvider);
-      _container.BindInstance<IPedestrianFactory>(pedestrianFactory).AsSingle();
-
-      // Hero factory
-      Vector3 spawnPosition = _heroSpawn != null ? _heroSpawn.position : Vector3.zero;
-      _container.Bind<IHeroSpawnPoint>().To<HeroSpawnPoint>().AsSingle()
-        .WithArguments(spawnPosition, _heroViewPrefab);
-      _container.Bind<IHeroFactory>().To<HeroFactory>().AsSingle();
-      _container.Bind<IEntityViewFactory>().To<EntityViewFactory>().AsSingle();
-
-      // Quest service
-      _container.Bind<IQuestService>().To<QuestService>().AsSingle();
-
-      // Money service
-      _container.Bind<IMoneyService>().To<MoneyService>().AsSingle();
-
-      // Feedback services (audio uses static Audio.Audio helper with auto-init)
-      _container.Bind<IHitEffectService>().To<HitEffectService>().AsSingle();
-      _container.Bind<IFloatingTextService>().To<FloatingTextService>().AsSingle();
-
-      // Upgrade service
-      _container.Bind<IUpgradeService>().To<UpgradeService>().AsSingle();
-
-      // System factory
-      _container.Bind<ISystemFactory>().To<SystemFactory>().AsSingle();
-    }
-
-    private void InitializeDifficulty(int dayNumber)
-    {
-      DifficultyScalingSettings difficultySettings = _gameBalance.Difficulty.ToSettings();
-      _difficultyService = new DifficultyScalingService(difficultySettings, _balanceProvider);
-      _difficultyService.ApplyDifficulty(dayNumber);
-
-      // Apply difficulty scaling to settings
-      DifficultyConfig difficulty = _difficultyService.CurrentDifficulty;
-
-      _pedestrianSpawnSettings.SpawnInterval = difficulty.PedestrianSpawnInterval;
-      _pedestrianSpawnSettings.MaxActive = difficulty.MaxPedestrians;
-      _pedestrianSpawnSettings.CrossingChance = difficulty.CrossingChance;
-
-      _runnerMovement.ForwardSpeed *= difficulty.ForwardSpeedMultiplier;
-
-      _questSettings.MinQuestsPerDay = difficulty.QuestCount;
-      _questSettings.MaxQuestsPerDay = difficulty.QuestCount;
     }
 
     private void Update()
@@ -440,16 +166,11 @@ namespace Code.Infrastructure
       _battleFeature.Cleanup();
     }
 
-    /// <summary>
-    /// Physics systems run in FixedUpdate for deterministic physics behavior.
-    /// This ensures consistent physics regardless of frame rate.
-    /// </summary>
     private void FixedUpdate()
     {
       if (!_physicsEnabled || _battleFeature == null || _daySessionService == null)
         return;
 
-      // Don't run physics when day is finished
       if (_daySessionService.State == DayState.Finished)
         return;
 
@@ -465,25 +186,24 @@ namespace Code.Infrastructure
       }
 
       (_inputService as System.IDisposable)?.Dispose();
-      _inputService = null;
     }
 
-    private void InitializeQuestUI(Contexts contexts)
+    private void InitializeQuestUI()
     {
       GameObject questUIObj = new GameObject("QuestUI");
       questUIObj.transform.SetParent(transform, false);
 
       _questUI = questUIObj.AddComponent<QuestUIController>();
-      _questUI.Initialize(contexts.meta);
+      _questUI.Initialize(_contexts.meta);
     }
 
-    private void InitializeEndDayScreen(Contexts contexts)
+    private void InitializeEndDayScreen()
     {
       GameObject endDayObj = new GameObject("EndDayScreen");
       endDayObj.transform.SetParent(transform, false);
 
       _endDayController = endDayObj.AddComponent<EndDayController>();
-      _endDayController.Initialize(contexts.meta, _moneyService, _questService);
+      _endDayController.Initialize(_contexts.meta, _moneyService, _questService);
     }
 
     private void HandleDayFinished()

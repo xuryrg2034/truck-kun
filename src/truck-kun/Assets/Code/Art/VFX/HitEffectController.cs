@@ -25,7 +25,25 @@ namespace Code.Art.VFX
     [SerializeField] private float _shakeDuration = 0.2f;
 
     private static HitEffectController _instance;
-    public static HitEffectController Instance => _instance;
+    public static HitEffectController Instance
+    {
+      get
+      {
+        if (_instance != null)
+          return _instance;
+
+        // Fallback: find or create
+        _instance = FindFirstObjectByType<HitEffectController>();
+        if (_instance != null)
+          return _instance;
+
+        // Create new instance
+        var go = new GameObject("[HitEffectController]");
+        _instance = go.AddComponent<HitEffectController>();
+        _instance.CreateDefaultPrefabs();
+        return _instance;
+      }
+    }
 
     // Object pools
     private ParticleSystem[] _sparksPool;
@@ -138,6 +156,7 @@ namespace Code.Art.VFX
       go.transform.SetParent(transform);
 
       ParticleSystem ps = go.AddComponent<ParticleSystem>();
+      ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
       var main = ps.main;
       main.duration = 0.5f;
       main.loop = false;
@@ -179,6 +198,7 @@ namespace Code.Art.VFX
       go.transform.SetParent(transform);
 
       ParticleSystem ps = go.AddComponent<ParticleSystem>();
+      ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
       var main = ps.main;
       main.duration = 1f;
       main.loop = false;

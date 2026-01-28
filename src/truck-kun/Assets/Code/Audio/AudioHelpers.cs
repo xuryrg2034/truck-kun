@@ -9,11 +9,29 @@ namespace Code.Audio
   public static class Audio
   {
     /// <summary>
+    /// Get or create AudioService instance (fallback if Zenject not configured)
+    /// </summary>
+    private static AudioService GetService()
+    {
+      if (AudioService.Instance != null)
+        return AudioService.Instance;
+
+      // Fallback: create AudioService if not exists
+      var existing = Object.FindFirstObjectByType<AudioService>();
+      if (existing != null)
+        return existing;
+
+      var go = new GameObject("[AudioService]");
+      Object.DontDestroyOnLoad(go);
+      return go.AddComponent<AudioService>();
+    }
+
+    /// <summary>
     /// Play SFX by type
     /// </summary>
     public static void PlaySFX(SFXType type)
     {
-      AudioService.Instance?.PlaySFX(type);
+      GetService()?.PlaySFX(type);
     }
 
     /// <summary>
@@ -21,7 +39,7 @@ namespace Code.Audio
     /// </summary>
     public static void PlaySFX(SFXType type, Vector3 position)
     {
-      AudioService.Instance?.PlaySFX(type, position);
+      GetService()?.PlaySFX(type, position);
     }
 
     /// <summary>
@@ -29,7 +47,7 @@ namespace Code.Audio
     /// </summary>
     public static void PlayMusic(MusicType type)
     {
-      AudioService.Instance?.PlayMusic(type);
+      GetService()?.PlayMusic(type);
     }
 
     /// <summary>
@@ -37,7 +55,7 @@ namespace Code.Audio
     /// </summary>
     public static void StopMusic()
     {
-      AudioService.Instance?.StopMusic();
+      GetService()?.StopMusic();
     }
 
     /// <summary>

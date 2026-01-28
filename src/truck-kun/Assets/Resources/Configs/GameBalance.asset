@@ -65,7 +65,7 @@ MonoBehaviour:
     BaseQuestReward: 50
     RewardPerTarget: 10
   Day:
-    DurationSeconds: 60
+    DurationSeconds: 5
     MinQuestsPerDay: 1
     MaxQuestsPerDay: 1
     QuestTargets:
@@ -119,7 +119,6 @@ MonoBehaviour:
     FloatSpeed: 2
     FloatDuration: 1.2
     FontSize: 32
-    SFXVolume: 0.7
     RewardColor: {r: 0.2, g: 1, b: 0.3, a: 1}
     PenaltyColor: {r: 1, g: 0.3, b: 0.2, a: 1}
   Difficulty:

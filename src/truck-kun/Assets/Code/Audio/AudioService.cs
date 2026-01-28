@@ -562,26 +562,4 @@ namespace Code.Audio
   }
 
   #endregion
-
-  #region Bootstrap
-
-  /// <summary>
-  /// Auto-creates AudioService on game start.
-  /// </summary>
-  public static class AudioBootstrap
-  {
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-    private static void Initialize()
-    {
-      if (AudioService.Instance != null)
-        return;
-
-      GameObject go = new GameObject("[AudioService]");
-      go.AddComponent<AudioService>();
-
-      Debug.Log("[Audio] AudioService created");
-    }
-  }
-
-  #endregion
 }

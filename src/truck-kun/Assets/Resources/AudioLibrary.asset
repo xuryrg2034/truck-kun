@@ -12,7 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 0}
   m_Name: AudioLibrary
   m_EditorClassIdentifier: Assembly-CSharp:Code.Audio:AudioLibrary
-  _musicClips: []
+  _musicClips:
+  - Type: 1
+    Clip: {fileID: 8300000, guid: ca44a36128a5b88408dd8b334fc7f01f, type: 3}
+  - Type: 2
+    Clip: {fileID: 8300000, guid: dd50430f7b62e514bbb053a4e3585168, type: 3}
+  - Type: 3
+    Clip: {fileID: 8300000, guid: 47ccf53a2e920f84bb70e85d1b6e6299, type: 3}
+  - Type: 4
+    Clip: {fileID: 8300000, guid: 8834e768c0eeb6148bbeb310dd121fc8, type: 3}
+  - Type: 5
+    Clip: {fileID: 8300000, guid: 5cfcc830f62b6b14abe3374a9e0ac334, type: 3}
   _sfxClips:
   - Type: 0
     Clip: {fileID: 8300000, guid: 54dff0a1f8abc474dbe1dd79932048ad, type: 3}

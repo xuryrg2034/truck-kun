@@ -15,7 +15,24 @@ namespace Code.Art.VFX
     [SerializeField] private AnimationCurve _shakeCurve = AnimationCurve.EaseInOut(0, 1, 1, 0);
 
     private static CameraShakeController _instance;
-    public static CameraShakeController Instance => _instance;
+    public static CameraShakeController Instance
+    {
+      get
+      {
+        if (_instance != null)
+          return _instance;
+
+        // Fallback: find or create
+        _instance = FindFirstObjectByType<CameraShakeController>();
+        if (_instance != null)
+          return _instance;
+
+        // Create new instance
+        var go = new GameObject("[CameraShakeController]");
+        _instance = go.AddComponent<CameraShakeController>();
+        return _instance;
+      }
+    }
 
     private Vector3 _originalPosition;
     private Quaternion _originalRotation;
