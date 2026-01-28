@@ -7,10 +7,12 @@ using Code.Gameplay.Features.Pedestrian;
 using Code.Gameplay.Features.Quest;
 using Code.Gameplay.Input;
 using Code.Infrastructure.Systems;
+using Code.Infrastructure.View;
 using Code.Meta.Difficulty;
 using Code.Meta.Upgrades;
 using Code.UI.EndDayScreen;
 using Code.UI.QuestUI;
+using Entitas;
 using UnityEngine;
 using Zenject;
 
@@ -216,7 +218,49 @@ namespace Code.Infrastructure
         return;
 
       _dayFinishedHandled = true;
+
+      // Disable player input
+      _inputService.Disable();
+
+      // Freeze all physics bodies (truck and pedestrians)
+      FreezeAllRigidbodies();
+
+      // Show end day screen
       _endDayController.Show();
+
+      Debug.Log("[EcsBootstrap] Day finished - input disabled, physics frozen");
+    }
+
+    private void FreezeAllRigidbodies()
+    {
+      // Freeze hero rigidbody
+      var heroes = _contexts.game.GetGroup(GameMatcher.AllOf(GameMatcher.Hero, GameMatcher.Rigidbody));
+      foreach (var hero in heroes.GetEntities())
+      {
+        if (hero.hasRigidbody && hero.rigidbody.Value != null)
+        {
+          Rigidbody rb = hero.rigidbody.Value;
+          rb.linearVelocity = Vector3.zero;
+          rb.angularVelocity = Vector3.zero;
+          rb.isKinematic = true;
+        }
+      }
+
+      // Freeze all pedestrian rigidbodies (for ragdolls)
+      var pedestrians = _contexts.game.GetGroup(GameMatcher.Pedestrian);
+      foreach (var pedestrian in pedestrians.GetEntities())
+      {
+        if (pedestrian.hasView && pedestrian.view.Value is Component comp)
+        {
+          Rigidbody[] rbs = comp.GetComponentsInChildren<Rigidbody>();
+          foreach (Rigidbody rb in rbs)
+          {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.isKinematic = true;
+          }
+        }
+      }
     }
 
     private void InitializeDayCounterUI(int dayNumber)
