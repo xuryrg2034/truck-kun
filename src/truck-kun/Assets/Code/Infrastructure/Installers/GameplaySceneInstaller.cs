@@ -10,6 +10,7 @@ using Code.Gameplay.Features.Hero;
 using Code.Gameplay.Features.Input;
 using Code.Gameplay.Features.Pedestrian;
 using Code.Gameplay.Features.Quest;
+using Code.Gameplay.Features.Obstacle;
 using Code.Gameplay.Features.Ragdoll;
 using Code.Gameplay.Features.Surface;
 using Code.Infrastructure.Systems;
@@ -172,9 +173,29 @@ namespace Code.Infrastructure.Installers
         HitRadius = balance.Movement.HitRadius,
         UsePhysicsCollision = true,
         MinImpactForce = 0.5f,
-        StrongImpactForce = 5f
+        StrongImpactForce = 5f,
+        // Knockback settings
+        ForceMultiplier = 15f,
+        MinSpeedForLift = 5f,
+        MaxLiftSpeed = 20f,
+        LiftMultiplier = 0.3f
       };
       Container.BindInstance(collision).AsSingle();
+
+      // Pedestrian Physics
+      var pedestrianPhysics = new PedestrianPhysicsSettings
+      {
+        MoveForce = 50f,
+        MaxSpeed = 3f,
+        Drag = 2f,
+        AngularDrag = 0.5f,
+        StudentMass = 60f,
+        SalarymanMass = 75f,
+        GrandmaMass = 50f,
+        OldManMass = 65f,
+        TeenagerMass = 55f
+      };
+      Container.BindInstance(pedestrianPhysics).AsSingle();
 
       // Pedestrians
       var pedestrians = new PedestrianSpawnSettings
@@ -254,17 +275,31 @@ namespace Code.Infrastructure.Installers
       // Ragdoll
       var ragdoll = new RagdollSettings
       {
-        HitForce = 800f,
-        UpwardForce = 300f,
-        TorqueForce = 200f,
-        DespawnDelay = 2.5f,
-        FadeStartDelay = 1.5f,
+        HitForce = 800f,           // Legacy, kept for compatibility
+        UpwardForce = 300f,        // Legacy
+        TorqueForce = 200f,        // Legacy
+        DespawnAfterHitDelay = 3f, // Time before fade starts
+        FadeDuration = 0.5f,       // Fade animation duration
         MaxActiveRagdolls = 5,
         RagdollDrag = 0.5f,
         RagdollAngularDrag = 0.5f,
         EnableFadeOut = true
       };
       Container.BindInstance(ragdoll).AsSingle();
+
+      // Obstacle
+      var obstacle = new ObstacleSettings
+      {
+        RampAngle = 15f,
+        BarrierMass = 200f,
+        BarrierSpeedPenalty = 0.3f,
+        SpeedBumpImpulse = 200f,
+        SpeedBumpPenalty = 0.1f,
+        HoleDownForce = 500f,
+        HoleSpeedPenalty = 0.5f,
+        HolePenaltyDuration = 1f
+      };
+      Container.BindInstance(obstacle).AsSingle();
     }
   }
 }

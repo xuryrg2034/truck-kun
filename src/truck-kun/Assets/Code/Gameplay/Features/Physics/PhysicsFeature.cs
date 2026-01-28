@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Code.Common.Services;
 using Code.Gameplay.Features.Hero;
+using Code.Gameplay.Features.Pedestrian.Systems;
 using Code.Infrastructure.Systems;
 using Entitas;
 using UnityEngine;
@@ -30,6 +31,9 @@ namespace Code.Gameplay.Features.Physics
     {
       // Debug system (can be removed later)
       Add(systems.Create<DebugPhysicsEntitiesSystem>());
+
+      // Pedestrian force-based movement (crossing pedestrians)
+      Add(systems.Create<PedestrianForceMovementSystem>());
 
       // Input reading
       Add(systems.Create<ReadInputForPhysicsSystem>());

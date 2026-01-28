@@ -258,12 +258,17 @@ namespace Code.Gameplay.Features.Pedestrian
   {
     private readonly PedestrianConfig _config;
     private readonly IBalanceProvider _balanceProvider;
+    private readonly PedestrianPhysicsSettings _physicsSettings;
     private readonly Dictionary<PedestrianKind, PedestrianVisualData> _visualCache = new();
 
-    public PedestrianFactory(PedestrianConfig config, IBalanceProvider balanceProvider = null)
+    public PedestrianFactory(
+      PedestrianConfig config,
+      PedestrianPhysicsSettings physicsSettings = null,
+      IBalanceProvider balanceProvider = null)
     {
       _config = config ?? throw new ArgumentNullException(nameof(config),
         "PedestrianConfig is required! Assign it in GameplaySceneInstaller.");
+      _physicsSettings = physicsSettings;
       _balanceProvider = balanceProvider;
       InitializeCache();
     }
@@ -340,6 +345,9 @@ namespace Code.Gameplay.Features.Pedestrian
       // Apply rotation (forward tilt)
       pedestrian.transform.rotation = Quaternion.Euler(data.ForwardTilt, 0f, 0f);
 
+      // Set layer for collision filtering
+      pedestrian.layer = LayerMask.NameToLayer("Pedestrian");
+
       // Ensure collider exists for physics collision detection
       CapsuleCollider collider = pedestrian.GetComponent<CapsuleCollider>();
       if (collider == null)
@@ -352,15 +360,23 @@ namespace Code.Gameplay.Features.Pedestrian
       // Explicitly not a trigger - we want OnCollisionEnter, not OnTriggerEnter
       collider.isTrigger = false;
 
-      // Add kinematic Rigidbody for better collision detection performance
-      // Kinematic = doesn't respond to physics forces, but participates in collision detection
+      // Dynamic Rigidbody for full physics simulation
       Rigidbody rb = pedestrian.GetComponent<Rigidbody>();
       if (rb == null)
       {
         rb = pedestrian.AddComponent<Rigidbody>();
       }
-      rb.isKinematic = true;
-      rb.useGravity = false;
+
+      // Configure for force-based movement
+      rb.isKinematic = false;
+      rb.useGravity = true;
+      rb.mass = _physicsSettings?.GetMass(data.Kind) ?? 60f;
+      rb.linearDamping = _physicsSettings?.Drag ?? 2f;
+      rb.angularDamping = _physicsSettings?.AngularDrag ?? 0.5f;
+      rb.interpolation = RigidbodyInterpolation.Interpolate;
+
+      // Freeze rotation to keep pedestrian upright (except Y for turning)
+      rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
 
       return pedestrian;
     }
@@ -375,7 +391,8 @@ namespace Code.Gameplay.Features.Pedestrian
     public PedestrianFeature(ISystemFactory systems)
     {
       Add(systems.Create<PedestrianSpawnSystem>());
-      Add(systems.Create<PedestrianCrossingSystem>());
+      // Note: PedestrianCrossingSystem removed - crossing movement now handled by
+      // PedestrianForceMovementSystem in PhysicsFeature (force-based physics)
       Add(systems.Create<PedestrianDespawnSystem>());
 
       // Animation systems

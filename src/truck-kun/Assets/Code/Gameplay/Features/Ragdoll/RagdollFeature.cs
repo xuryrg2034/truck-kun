@@ -30,22 +30,22 @@ namespace Code.Gameplay.Features.Ragdoll
   [Serializable]
   public class RagdollSettings
   {
-    [Header("Force")]
-    [Tooltip("Base force applied on hit")]
+    [Header("Force (legacy - now handled by PhysicsCollisionHandler)")]
+    [Tooltip("Base force applied on hit (legacy, kept for compatibility)")]
     public float HitForce = 800f;
 
-    [Tooltip("Upward force component (makes NPC fly up)")]
+    [Tooltip("Upward force component (legacy)")]
     public float UpwardForce = 300f;
 
-    [Tooltip("Torque for spin effect")]
+    [Tooltip("Torque for spin effect (legacy)")]
     public float TorqueForce = 200f;
 
     [Header("Timing")]
-    [Tooltip("Time before ragdolled NPC is removed")]
-    public float DespawnDelay = 2.5f;
+    [Tooltip("Time before ragdolled NPC starts fading/is removed")]
+    public float DespawnAfterHitDelay = 3f;
 
-    [Tooltip("Time before fade starts (if enabled)")]
-    public float FadeStartDelay = 1.5f;
+    [Tooltip("Duration of fade out animation")]
+    public float FadeDuration = 0.5f;
 
     [Header("Limits")]
     [Tooltip("Maximum number of active ragdolls")]
@@ -61,6 +61,10 @@ namespace Code.Gameplay.Features.Ragdoll
     [Header("Visual")]
     [Tooltip("Enable fade out before despawn")]
     public bool EnableFadeOut = true;
+
+    // Legacy property for backward compatibility
+    public float DespawnDelay => DespawnAfterHitDelay;
+    public float FadeStartDelay => DespawnAfterHitDelay - FadeDuration;
   }
 
   #endregion
@@ -81,23 +85,20 @@ namespace Code.Gameplay.Features.Ragdoll
   #region Systems
 
   /// <summary>
-  /// Converts hit pedestrians to ragdolls instead of destroying them.
-  /// Applies physics force to make them fly away.
+  /// Converts hit pedestrians to ragdolls.
+  /// Note: Knockback force is now applied by PhysicsCollisionHandler.
+  /// This system only configures ragdoll state and timing.
   /// </summary>
   public class ApplyRagdollOnHitSystem : IExecuteSystem
   {
-    private readonly GameContext _game;
     private readonly RagdollSettings _settings;
     private readonly IGroup<GameEntity> _hitPedestrians;
     private readonly IGroup<GameEntity> _activeRagdolls;
-    private readonly IGroup<GameEntity> _heroes;
     private readonly List<GameEntity> _buffer = new(16);
-    private readonly List<GameEntity> _heroBuffer = new(1);
     private readonly List<GameEntity> _ragdollBuffer = new(8);
 
     public ApplyRagdollOnHitSystem(GameContext game, RagdollSettings settings)
     {
-      _game = game;
       _settings = settings;
 
       // Pedestrians that were just hit (have Hit but not yet Ragdolled)
@@ -107,39 +108,20 @@ namespace Code.Gameplay.Features.Ragdoll
 
       // Currently active ragdolls (for limiting)
       _activeRagdolls = game.GetGroup(GameMatcher.AllOf(GameMatcher.Ragdolled));
-
-      // Hero for direction calculation
-      _heroes = game.GetGroup(GameMatcher.AllOf(GameMatcher.Hero, GameMatcher.WorldPosition));
     }
 
     public void Execute()
     {
-      int hitCount = _hitPedestrians.count;
-      if (hitCount > 0)
-        Debug.Log($"<color=orange>[Ragdoll]</color> Found {hitCount} hit pedestrians to ragdoll");
-
-      // Get hero position for force direction
-      Vector3 heroPos = Vector3.zero;
-      Vector3 heroVelocity = Vector3.forward * 5f; // Default velocity
-
-      foreach (GameEntity hero in _heroes.GetEntities(_heroBuffer))
-      {
-        heroPos = hero.worldPosition.Value;
-        if (hero.hasPhysicsVelocity)
-          heroVelocity = hero.physicsVelocity.Value;
-        break;
-      }
-
       // Check ragdoll limit - remove oldest if needed
       EnforceRagdollLimit();
 
       foreach (GameEntity pedestrian in _hitPedestrians.GetEntities(_buffer))
       {
-        ConvertToRagdoll(pedestrian, heroPos, heroVelocity);
+        ConvertToRagdoll(pedestrian);
       }
     }
 
-    private void ConvertToRagdoll(GameEntity pedestrian, Vector3 heroPos, Vector3 heroVelocity)
+    private void ConvertToRagdoll(GameEntity pedestrian)
     {
       if (!pedestrian.hasView)
         return;
@@ -149,67 +131,36 @@ namespace Code.Gameplay.Features.Ragdoll
         return;
 
       GameObject go = component.gameObject;
-      Vector3 pedPos = pedestrian.hasWorldPosition ? pedestrian.worldPosition.Value : go.transform.position;
 
-      // Get or add Rigidbody
+      // Get Rigidbody (should already exist from PedestrianFactory)
       Rigidbody rb = go.GetComponent<Rigidbody>();
-      if (rb == null)
+      if (rb != null)
       {
-        rb = go.AddComponent<Rigidbody>();
+        // Configure for ragdoll physics (free movement)
+        rb.linearDamping = _settings.RagdollDrag;
+        rb.angularDamping = _settings.RagdollAngularDrag;
+        rb.constraints = RigidbodyConstraints.None;
       }
 
-      // Configure for ragdoll physics
-      rb.isKinematic = false;
-      rb.useGravity = true;
-      rb.linearDamping = _settings.RagdollDrag;
-      rb.angularDamping = _settings.RagdollAngularDrag;
-      rb.mass = 70f; // Human mass
-      rb.interpolation = RigidbodyInterpolation.Interpolate;
+      // Disable animator if present
+      Animator animator = go.GetComponent<Animator>();
+      if (animator != null)
+        animator.enabled = false;
 
-      // Remove constraints for free movement
-      rb.constraints = RigidbodyConstraints.None;
-
-      // Calculate force direction
-      Vector3 hitDirection = (pedPos - heroPos).normalized;
-      hitDirection.y = 0; // Flatten horizontal
-
-      // If hero is moving, use velocity direction
-      if (heroVelocity.sqrMagnitude > 0.1f)
-      {
-        hitDirection = heroVelocity.normalized;
-        hitDirection.y = 0;
-      }
-
-      // Calculate impact force based on hero speed
-      float speedMultiplier = Mathf.Clamp(heroVelocity.magnitude / 5f, 0.5f, 2f);
-      float totalForce = _settings.HitForce * speedMultiplier;
-
-      // Apply forces
-      Vector3 force = hitDirection * totalForce;
-      force.y = _settings.UpwardForce; // Add upward component
-
-      rb.AddForce(force, ForceMode.Impulse);
-
-      // Add random torque for tumbling effect
-      Vector3 torque = new Vector3(
-        UnityEngine.Random.Range(-1f, 1f),
-        UnityEngine.Random.Range(-1f, 1f),
-        UnityEngine.Random.Range(-1f, 1f)
-      ) * _settings.TorqueForce;
-
-      rb.AddTorque(torque, ForceMode.Impulse);
-
-      // Mark as ragdolled
+      // Mark as ragdolled with despawn timing
       float now = Time.time;
-      pedestrian.AddRagdolled(now, now + _settings.DespawnDelay);
+      float totalTime = _settings.DespawnAfterHitDelay + _settings.FadeDuration;
+      pedestrian.AddRagdolled(now, now + totalTime);
 
       // Remove from pedestrian movement systems
+      if (pedestrian.hasCrossingPedestrian)
+        pedestrian.RemoveCrossingPedestrian();
       if (pedestrian.hasMoveDirection)
         pedestrian.RemoveMoveDirection();
       if (pedestrian.hasMoveSpeed)
         pedestrian.RemoveMoveSpeed();
 
-      Debug.Log($"[Ragdoll] Pedestrian {pedestrian.id.Value} launched with force {totalForce:F0}");
+      Debug.Log($"[Ragdoll] Pedestrian {pedestrian.id.Value} converted to ragdoll");
     }
 
     private void EnforceRagdollLimit()
@@ -253,7 +204,7 @@ namespace Code.Gameplay.Features.Ragdoll
 
   /// <summary>
   /// Cleans up ragdolled pedestrians after delay.
-  /// Optionally fades them out before removal.
+  /// Fades them out before removal if enabled.
   /// </summary>
   public class RagdollCleanupSystem : IExecuteSystem
   {
@@ -283,12 +234,15 @@ namespace Code.Gameplay.Features.Ragdoll
           continue;
         }
 
-        // Apply fade effect
-        if (_settings.EnableFadeOut && now >= hitTime + _settings.FadeStartDelay)
+        // Apply fade effect during FadeDuration before despawn
+        if (_settings.EnableFadeOut)
         {
-          float fadeProgress = (now - hitTime - _settings.FadeStartDelay) /
-                               (despawnTime - hitTime - _settings.FadeStartDelay);
-          ApplyFade(ragdoll, 1f - fadeProgress);
+          float fadeStartTime = despawnTime - _settings.FadeDuration;
+          if (now >= fadeStartTime)
+          {
+            float fadeProgress = (now - fadeStartTime) / _settings.FadeDuration;
+            ApplyFade(ragdoll, 1f - fadeProgress);
+          }
         }
       }
     }

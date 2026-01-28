@@ -64,6 +64,19 @@ namespace Code.Gameplay.Features.Collision
 
     [Tooltip("Force considered a 'strong' hit (for VFX scaling)")]
     public float StrongImpactForce = 5f;
+
+    [Header("Knockback Force")]
+    [Tooltip("Multiplier for knockback force (impactSpeed * mass * multiplier)")]
+    public float ForceMultiplier = 15f;
+
+    [Tooltip("Minimum impact speed required for vertical lift")]
+    public float MinSpeedForLift = 5f;
+
+    [Tooltip("Maximum speed for lift calculation (caps the lift factor)")]
+    public float MaxLiftSpeed = 20f;
+
+    [Tooltip("Multiplier for vertical lift force (as fraction of horizontal)")]
+    public float LiftMultiplier = 0.3f;
   }
 
   #endregion
