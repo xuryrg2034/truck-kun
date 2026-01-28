@@ -9,7 +9,11 @@
       "Bash(then mv \"C:/Projects/home/unity/Truck-kun/src/truck-kun/Assets/Code/Debug.meta\" \"C:/Projects/home/unity/Truck-kun/src/truck-kun/Assets/Code/DevTools.meta\")",
       "Bash(else echo \"No .meta file found\")",
       "Bash(fi)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "WebFetch(domain:mixkit.co)",
+      "WebSearch",
+      "Bash(dir \"C:\\\\Projects\\\\home\\\\unity\\\\Truck-kun\\\\src\\\\truck-kun\\\\Assets\\\\Audio\")",
+      "Bash(grep:*)"
     ]
   }
 }

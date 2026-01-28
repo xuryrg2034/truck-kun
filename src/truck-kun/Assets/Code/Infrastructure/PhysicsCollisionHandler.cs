@@ -1,3 +1,4 @@
+using Code.Art.VFX;
 using Code.Gameplay.Features.Collision;
 using Code.Gameplay.Features.Pedestrian;
 using UnityEngine;
@@ -57,6 +58,9 @@ namespace Code.Infrastructure.View
 
       // Create HitEvent with extended data
       CreateHitEvent(pedestrianEntity, impactForce, impactPoint, impactNormal);
+
+      // Play hit VFX (particles + camera shake)
+      HitEffectController.Instance?.PlayHitEffect(impactPoint, impactNormal, impactForce);
 
       // Notify debug visualizer
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

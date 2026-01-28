@@ -265,10 +265,6 @@ namespace Code.Balance.Editor
         EditorGUILayout.PropertyField(feedback.FindPropertyRelative("FontSize"));
 
         EditorGUILayout.Space(5);
-        EditorGUILayout.LabelField("Audio", EditorStyles.miniBoldLabel);
-        EditorGUILayout.PropertyField(feedback.FindPropertyRelative("SFXVolume"));
-
-        EditorGUILayout.Space(5);
         EditorGUILayout.LabelField("Colors", EditorStyles.miniBoldLabel);
         EditorGUILayout.PropertyField(feedback.FindPropertyRelative("RewardColor"));
         EditorGUILayout.PropertyField(feedback.FindPropertyRelative("PenaltyColor"));

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Code.Art;
+using Code.Art.Animation;
 using Code.Balance;
 using Code.Common;
 using Code.Gameplay.Features.Hero;
@@ -544,6 +545,10 @@ namespace Code.Gameplay.Features.Pedestrian
       Add(systems.Create<PedestrianSpawnSystem>());
       Add(systems.Create<PedestrianCrossingSystem>());
       Add(systems.Create<PedestrianDespawnSystem>());
+
+      // Animation systems
+      Add(systems.Create<NPCAnimationSystem>());
+      Add(systems.Create<DisableAnimationOnHitSystem>());
     }
   }
 

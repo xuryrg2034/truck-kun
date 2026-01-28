@@ -244,7 +244,6 @@ namespace Code.Infrastructure
         FloatSpeed = balance.Feedback.FloatSpeed,
         FloatDuration = balance.Feedback.FloatDuration,
         FontSize = balance.Feedback.FontSize,
-        SFXVolume = balance.Feedback.SFXVolume,
         RewardColor = balance.Feedback.RewardColor,
         PenaltyColor = balance.Feedback.PenaltyColor
       };
@@ -390,8 +389,7 @@ namespace Code.Infrastructure
       // Money service
       _container.Bind<IMoneyService>().To<MoneyService>().AsSingle();
 
-      // Feedback services
-      _container.Bind<IAudioService>().To<AudioService>().AsSingle();
+      // Feedback services (audio uses static Audio.Audio helper with auto-init)
       _container.Bind<IHitEffectService>().To<HitEffectService>().AsSingle();
       _container.Bind<IFloatingTextService>().To<FloatingTextService>().AsSingle();
 

@@ -182,9 +182,6 @@ namespace Code.Balance
     public float FloatDuration = 1.2f;
     public int FontSize = 32;
 
-    [Header("Audio")]
-    [Range(0f, 1f)] public float SFXVolume = 0.7f;
-
     [Header("Colors")]
     public Color RewardColor = new Color(0.2f, 1f, 0.3f);
     public Color PenaltyColor = new Color(1f, 0.3f, 0.2f);
@@ -436,7 +433,6 @@ namespace Code.Balance
         FloatSpeed = balance.FloatSpeed,
         FloatDuration = balance.FloatDuration,
         FontSize = balance.FontSize,
-        SFXVolume = balance.SFXVolume,
         RewardColor = balance.RewardColor,
         PenaltyColor = balance.PenaltyColor
       };
