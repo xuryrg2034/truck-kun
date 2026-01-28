@@ -189,15 +189,12 @@ namespace Code.UI.EndDayScreen
         if (quest.IsCompleted)
         {
           int reward = GetQuestReward(quest.QuestId);
-
-          string typeLabel = quest.TargetType == PedestrianKind.Target ? "целей" : "NPC";
-          string text = $"✓ Сбито {quest.RequiredCount} {typeLabel}  +{reward}¥";
+          string text = $"✓ Сбито {quest.RequiredCount} {quest.TargetType}  +{reward}¥";
           CreateText(_questsContainer, text, 20, FontStyle.Normal, SuccessColor);
         }
         else
         {
-          string typeLabel = quest.TargetType == PedestrianKind.Target ? "целей" : "NPC";
-          string text = $"✗ Сбито {quest.CurrentCount}/{quest.RequiredCount} {typeLabel}";
+          string text = $"✗ Сбито {quest.CurrentCount}/{quest.RequiredCount} {quest.TargetType}";
           CreateText(_questsContainer, text, 20, FontStyle.Normal, new Color(0.6f, 0.6f, 0.6f));
         }
       }

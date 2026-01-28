@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: PedestrianConfig
   m_EditorClassIdentifier: Assembly-CSharp:Code.Gameplay.Features.Pedestrian:PedestrianConfig
   _visualData:
-  - Prefab: {fileID: 0}
+  - Prefab: {fileID: 2391119147759263486, guid: eb47069a7096ac045a79b57004fd3250, type: 3}
     Kind: 0
     Color: {r: 0.95, g: 0.95, b: 1, a: 1}
     Scale: 0.85
@@ -40,7 +40,7 @@ MonoBehaviour:
     BaseSpeed: 0.8
     Category: 1
     DisplayName: Grandma
-  - Prefab: {fileID: 0}
+  - Prefab: {fileID: 5239283888830579918, guid: 25a617f8c517e01429ee3dd8cd169907, type: 3}
     Kind: 3
     Color: {r: 0.6, g: 0.45, b: 0.3, a: 1}
     Scale: 0.9
@@ -49,7 +49,7 @@ MonoBehaviour:
     BaseSpeed: 0.9
     Category: 1
     DisplayName: Old Man
-  - Prefab: {fileID: 2391119147759263486, guid: eb47069a7096ac045a79b57004fd3250, type: 3}
+  - Prefab: {fileID: 2391119147759263486, guid: 2a2e1e9449424eb4ca7f6c5d8dcf9bb6, type: 3}
     Kind: 4
     Color: {r: 0.2, g: 0.8, b: 0.4, a: 1}
     Scale: 0.95

@@ -36,6 +36,9 @@ namespace Code.Infrastructure.Installers
     [Header("Balance")]
     [SerializeField] private GameBalance _gameBalance;
 
+    [Header("Pedestrians")]
+    [SerializeField] private PedestrianConfig _pedestrianConfig;
+
     public override void InstallBindings()
     {
       // Validate and load GameBalance
@@ -58,6 +61,17 @@ namespace Code.Infrastructure.Installers
       if (_heroViewPrefab == null)
       {
         Debug.LogError("[GameplaySceneInstaller] Hero View Prefab is missing!");
+        return;
+      }
+
+      // Load PedestrianConfig from Resources if not assigned
+      if (_pedestrianConfig == null)
+        _pedestrianConfig = Resources.Load<PedestrianConfig>("Configs/PedestrianConfig");
+
+      if (_pedestrianConfig == null)
+      {
+        Debug.LogError("[GameplaySceneInstaller] PedestrianConfig not found! " +
+          "Create via: Create > Truck-kun > Pedestrian Config and place in Resources/Configs/");
         return;
       }
 
@@ -88,6 +102,9 @@ namespace Code.Infrastructure.Installers
 
       // Create settings from balance (will be modified by EcsBootstrap for difficulty/upgrades)
       BindSettingsFromBalance(balanceProvider.Balance);
+
+      // Pedestrian Config
+      Container.BindInstance(_pedestrianConfig).AsSingle();
 
       // Factories
       Container.Bind<IPedestrianFactory>().To<PedestrianFactory>().AsSingle();

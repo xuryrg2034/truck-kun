@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Code.Art.Animation;
-using Code.Art.Procedural;
 using Code.Balance;
 using Code.Common.Services;
 using Code.Gameplay.Features.Hero;
@@ -17,16 +16,11 @@ namespace Code.Gameplay.Features.Pedestrian
 
   public enum PedestrianKind
   {
-    // Concrete types for quests
     StudentNerd,    // Schoolboy with backpack, bent forward
     Salaryman,      // Office worker, gray suit
     Grandma,        // Old lady, slow, pink
     OldMan,         // Old man, slow, brown
-    Teenager,       // Young person, colorful
-
-    // Legacy types (mapped to concrete for compatibility)
-    Target = StudentNerd,
-    Forbidden = Grandma
+    Teenager        // Young person, colorful
   }
 
   public enum PedestrianCategory
@@ -266,25 +260,20 @@ namespace Code.Gameplay.Features.Pedestrian
     private readonly IBalanceProvider _balanceProvider;
     private readonly Dictionary<PedestrianKind, PedestrianVisualData> _visualCache = new();
 
-    public PedestrianFactory(PedestrianConfig config = null, IBalanceProvider balanceProvider = null)
+    public PedestrianFactory(PedestrianConfig config, IBalanceProvider balanceProvider = null)
     {
-      _config = config;
+      _config = config ?? throw new ArgumentNullException(nameof(config),
+        "PedestrianConfig is required! Assign it in GameplaySceneInstaller.");
       _balanceProvider = balanceProvider;
       InitializeCache();
     }
 
     private void InitializeCache()
     {
-      // Cache all visual data
+      // Cache all visual data from config
       foreach (PedestrianKind kind in Enum.GetValues(typeof(PedestrianKind)))
       {
-        // Skip legacy aliases
-        if (kind == PedestrianKind.Target || kind == PedestrianKind.Forbidden)
-          continue;
-
-        PedestrianVisualData data = _config != null
-          ? _config.GetVisualData(kind)
-          : PedestrianVisualData.Default(kind);
+        PedestrianVisualData data = _config.GetVisualData(kind);
 
         // Override with GameBalance values if available
         if (_balanceProvider?.Balance != null)
@@ -292,7 +281,7 @@ namespace Code.Gameplay.Features.Pedestrian
           PedestrianTypeBalance balanceData = _balanceProvider.Balance.GetPedestrianTypeBalance(kind);
           if (balanceData != null)
           {
-            // Only override color if it's not white (white = default, nox  t set)
+            // Only override color if it's not white (white = default, not set)
             if (balanceData.Color != Color.white)
               data.Color = balanceData.Color;
 
@@ -308,61 +297,36 @@ namespace Code.Gameplay.Features.Pedestrian
 
     public PedestrianVisualData GetVisualData(PedestrianKind kind)
     {
-      // Map legacy types to concrete types
-      kind = MapLegacyKind(kind);
-
       if (_visualCache.TryGetValue(kind, out PedestrianVisualData data))
         return data;
 
-      return PedestrianVisualData.Default(kind);
+      Debug.LogError($"[PedestrianFactory] No visual data for {kind}! Check PedestrianConfig.");
+      return _config.GetVisualData(PedestrianKind.StudentNerd); // Fallback to first type
     }
 
     public PedestrianKind SelectRandomKind()
     {
-      if (_config != null)
-        return _config.SelectRandomKind();
-
-      // Default random selection
-      PedestrianKind[] kinds = {
-        PedestrianKind.StudentNerd,
-        PedestrianKind.Salaryman,
-        PedestrianKind.Grandma,
-        PedestrianKind.OldMan,
-        PedestrianKind.Teenager
-      };
-
-      return kinds[UnityEngine.Random.Range(0, kinds.Length)];
+      return _config.SelectRandomKind();
     }
 
     public bool IsProtected(PedestrianKind kind)
     {
-      kind = MapLegacyKind(kind);
       PedestrianVisualData data = GetVisualData(kind);
       return data.Category == PedestrianCategory.Protected;
     }
 
     public GameObject CreatePedestrianVisual(PedestrianKind kind, Vector3 position)
     {
-      kind = MapLegacyKind(kind);
       PedestrianVisualData data = GetVisualData(kind);
 
-      // If prefab is assigned, use it
-      if (data.Prefab != null)
+      if (data.Prefab == null)
       {
-        return CreateFromPrefab(data, position);
+        Debug.LogError($"[PedestrianFactory] No prefab assigned for {kind}! " +
+          "Assign prefabs in PedestrianConfig asset.");
+        return null;
       }
 
-      // Otherwise, use procedural generation from ProceduralMeshGenerator if available
-      GameObject proceduralModel = TryCreateProceduralModel(kind, position);
-      if (proceduralModel != null)
-      {
-        proceduralModel.name = $"Pedestrian_{data.DisplayName}";
-        proceduralModel.transform.localScale = Vector3.one * data.Scale;
-        return proceduralModel;
-      }
-
-      // Fallback: create capsule
-      return CreateFallbackCapsule(data, position);
+      return CreateFromPrefab(data, position);
     }
 
     private GameObject CreateFromPrefab(PedestrianVisualData data, Vector3 position)
@@ -399,138 +363,6 @@ namespace Code.Gameplay.Features.Pedestrian
       rb.useGravity = false;
 
       return pedestrian;
-    }
-
-    private GameObject TryCreateProceduralModel(PedestrianKind kind, Vector3 position)
-    {
-      GameObject result = kind switch
-      {
-        PedestrianKind.StudentNerd => ProceduralMeshGenerator.CreateStudentNerd(),
-        PedestrianKind.Salaryman => ProceduralMeshGenerator.CreateSalaryman(),
-        PedestrianKind.Grandma => ProceduralMeshGenerator.CreateGrandma(),
-        PedestrianKind.OldMan => ProceduralMeshGenerator.CreateGrandma(), // Use grandma model for old man
-        PedestrianKind.Teenager => ProceduralMeshGenerator.CreateStudentNerd(), // Use student model for teenager
-        _ => null
-      };
-
-      if (result != null)
-      {
-        result.transform.position = position;
-      }
-      return result;
-    }
-
-    private GameObject CreateFallbackCapsule(PedestrianVisualData data, Vector3 position)
-    {
-      // Fallback: create capsule
-      GameObject pedestrian = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-      pedestrian.name = $"Pedestrian_{data.DisplayName}";
-      pedestrian.transform.position = position;
-
-      // Apply scale
-      pedestrian.transform.localScale = new Vector3(
-        data.Scale * 0.5f,
-        data.Scale,
-        data.Scale * 0.5f
-      );
-
-      // Apply rotation (forward tilt)
-      pedestrian.transform.rotation = Quaternion.Euler(data.ForwardTilt, 0f, 0f);
-
-      // Apply color
-      Renderer renderer = pedestrian.GetComponent<Renderer>();
-      if (renderer != null)
-      {
-        // Use existing material or create new one with fallback shader
-        Material mat = renderer.material;
-        if (mat == null)
-        {
-          Shader shader = Shader.Find("Standard");
-          if (shader == null)
-            shader = Shader.Find("Universal Render Pipeline/Lit");
-          if (shader == null)
-            shader = Shader.Find("Sprites/Default");
-
-          mat = shader != null ? new Material(shader) : new Material(Shader.Find("Hidden/InternalErrorShader"));
-        }
-
-        mat.color = data.Color;
-
-        // Try to set main color via different property names
-        if (mat.HasProperty("_BaseColor"))
-          mat.SetColor("_BaseColor", data.Color);
-        if (mat.HasProperty("_Color"))
-          mat.SetColor("_Color", data.Color);
-
-        // Add slight emission for protected types
-        if (data.Category == PedestrianCategory.Protected)
-        {
-          if (mat.HasProperty("_EmissionColor"))
-          {
-            mat.EnableKeyword("_EMISSION");
-            mat.SetColor("_EmissionColor", data.Color * 0.3f);
-          }
-        }
-
-        renderer.material = mat;
-      }
-
-      // Add indicator for type (small sphere on top)
-      AddTypeIndicator(pedestrian.transform, data);
-
-      return pedestrian;
-    }
-
-    private void AddTypeIndicator(Transform parent, PedestrianVisualData data)
-    {
-      // Add small sphere on top to help identify type
-      GameObject indicator = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-      indicator.name = "TypeIndicator";
-      indicator.transform.SetParent(parent, false);
-      indicator.transform.localPosition = new Vector3(0f, 0.7f, 0f);
-      indicator.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
-      indicator.transform.localRotation = Quaternion.identity;
-
-      // Remove collider from indicator
-      Collider indicatorCollider = indicator.GetComponent<Collider>();
-      if (indicatorCollider != null)
-        UnityEngine.Object.Destroy(indicatorCollider);
-
-      Renderer renderer = indicator.GetComponent<Renderer>();
-      if (renderer != null)
-      {
-        Material mat = renderer.material;
-
-        // Color based on category
-        Color indicatorColor = data.Category == PedestrianCategory.Protected
-          ? new Color(1f, 0.3f, 0.3f)  // Red for protected
-          : new Color(0.3f, 1f, 0.3f); // Green for normal
-
-        mat.color = indicatorColor;
-
-        if (mat.HasProperty("_BaseColor"))
-          mat.SetColor("_BaseColor", indicatorColor);
-        if (mat.HasProperty("_Color"))
-          mat.SetColor("_Color", indicatorColor);
-
-        if (mat.HasProperty("_EmissionColor"))
-        {
-          mat.EnableKeyword("_EMISSION");
-          mat.SetColor("_EmissionColor", indicatorColor * 0.5f);
-        }
-
-        renderer.material = mat;
-      }
-    }
-
-    private static PedestrianKind MapLegacyKind(PedestrianKind kind)
-    {
-      return kind switch
-      {
-        PedestrianKind.Target => PedestrianKind.StudentNerd,
-        PedestrianKind.Forbidden => PedestrianKind.Grandma,
-        _ => kind
-      };
     }
   }
 
