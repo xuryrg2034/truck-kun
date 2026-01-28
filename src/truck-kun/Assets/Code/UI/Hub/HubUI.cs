@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Code.Audio;
 using Code.Infrastructure;
 using Code.Meta.Upgrades;
 using Code.UI.Settings;
@@ -31,6 +32,9 @@ namespace Code.UI.Hub
       _settingsPanel = gameObject.AddComponent<SettingsPanel>();
       CreateUI();
       UpdateUI();
+
+      // Play hub music
+      Code.Audio.Audio.PlayMusic(MusicType.Hub);
 
       // Subscribe to money changes
       GameStateService.Instance.OnMoneyChanged += OnMoneyChanged;

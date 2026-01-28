@@ -1,3 +1,4 @@
+using Code.Audio;
 using Code.Infrastructure;
 using Code.UI.Settings;
 using UnityEngine;
@@ -18,7 +19,6 @@ namespace Code.UI.MainMenu
     private Text _lastSaveText;
     private Text _versionText;
     private SettingsPanel _settingsPanel;
-    private AudioSource _musicSource;
 
     private static readonly Color TitleColor = new Color(0.95f, 0.25f, 0.25f);
     private static readonly Color TitleGlowColor = new Color(1f, 0.4f, 0.2f);
@@ -377,58 +377,8 @@ namespace Code.UI.MainMenu
 
     private void SetupMusic()
     {
-      // Create music source
-      _musicSource = gameObject.AddComponent<AudioSource>();
-      _musicSource.loop = true;
-      _musicSource.volume = SettingsService.Instance.GetMusicVolume();
-      _musicSource.playOnAwake = false;
-
-      // Subscribe to settings changes
-      SettingsService.Instance.OnSettingsChanged += OnSettingsChanged;
-
-      // Try to load music from Resources
-      AudioClip menuMusic = Resources.Load<AudioClip>("Audio/MenuMusic");
-      if (menuMusic != null)
-      {
-        _musicSource.clip = menuMusic;
-        _musicSource.Play();
-      }
-      else
-      {
-        // Generate procedural ambient music
-        GenerateProceduralMusic();
-      }
-    }
-
-    private void GenerateProceduralMusic()
-    {
-      // Create a simple ambient drone
-      int sampleRate = 44100;
-      int duration = 10; // seconds
-      int samples = sampleRate * duration;
-
-      AudioClip clip = AudioClip.Create("MenuAmbient", samples, 1, sampleRate, false);
-      float[] data = new float[samples];
-
-      for (int i = 0; i < samples; i++)
-      {
-        float t = (float)i / sampleRate;
-
-        // Low drone
-        float drone = Mathf.Sin(2 * Mathf.PI * 55f * t) * 0.1f;
-        drone += Mathf.Sin(2 * Mathf.PI * 82.5f * t) * 0.05f;
-
-        // Subtle shimmer
-        float shimmer = Mathf.Sin(2 * Mathf.PI * 220f * t) * 0.02f;
-        shimmer *= (1f + Mathf.Sin(2 * Mathf.PI * 0.1f * t)) * 0.5f;
-
-        // Combine
-        data[i] = (drone + shimmer) * 0.5f;
-      }
-
-      clip.SetData(data, 0);
-      _musicSource.clip = clip;
-      _musicSource.Play();
+      // Play main menu music through AudioService
+      Code.Audio.Audio.PlayMusic(MusicType.MainMenu);
     }
 
     private void PlayClickSound()
@@ -436,12 +386,6 @@ namespace Code.UI.MainMenu
       // Simple click sound
       AudioSource.PlayClipAtPoint(CreateClickSound(), Camera.main?.transform.position ?? Vector3.zero,
         SettingsService.Instance.GetSFXVolume());
-    }
-
-    private void OnSettingsChanged(SettingsData data)
-    {
-      if (_musicSource != null)
-        _musicSource.volume = data.MusicVolume;
     }
 
     private AudioClip CreateClickSound()
@@ -641,12 +585,7 @@ namespace Code.UI.MainMenu
 
     private void OnDestroy()
     {
-      if (_musicSource != null)
-        _musicSource.Stop();
-
-      // Unsubscribe from settings changes
-      if (SettingsService.Instance != null)
-        SettingsService.Instance.OnSettingsChanged -= OnSettingsChanged;
+      // Music continues playing through AudioService
     }
   }
 }

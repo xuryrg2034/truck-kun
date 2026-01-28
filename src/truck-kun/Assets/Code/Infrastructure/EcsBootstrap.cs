@@ -1,3 +1,4 @@
+using Code.Audio;
 using Code.Balance;
 using Code.Gameplay;
 using Code.Gameplay.Features.Economy;
@@ -77,6 +78,9 @@ namespace Code.Infrastructure
 
       // Start the day
       _daySessionService.StartDay();
+
+      // Play gameplay music
+      Code.Audio.Audio.PlayMusic(MusicType.Gameplay);
 
       if (_daySessionService.State == DayState.Finished)
         HandleDayFinished();
