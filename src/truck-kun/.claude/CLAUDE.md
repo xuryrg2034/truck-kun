@@ -14,7 +14,7 @@
 
 | Цель | Файл |
 |------|------|
-| Конфигурация игры | `Assets/Code/Balance/GameBalance.cs` |
+| Конфигурация уровня | `Assets/Code/Configs/LevelConfig.cs` |
 | Точка входа ECS | `Assets/Code/Infrastructure/Bootstrap/EcsBootstrap.cs` |
 | Порядок систем | `Assets/Code/Gameplay/BattleFeature.cs` |
 | NPC логика | `Assets/Code/Gameplay/Features/Pedestrian/PedestrianFeature.cs` |

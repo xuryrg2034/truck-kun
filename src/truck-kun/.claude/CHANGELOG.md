@@ -19,6 +19,18 @@
 
 ---
 
+## 2026-01-29 - Завершение миграции на модульные конфиги
+
+**Файлы:**
+- `.claude/CLAUDE.md` - исправлена ссылка на удалённый GameBalance.cs → LevelConfig.cs
+
+**Причина:** GameBalance.cs удалён, конфигурация теперь через модульные ScriptableObjects
+**Детали:**
+- LevelConfig агрегирует: EconomyConfig, FeedbackConfig, DayConfig, PedestrianSpawnConfig, QuestPoolConfig
+- Все конфиги обязательны, [InjectOptional] удалён
+
+---
+
 ## 2026-01-28 13:35 - Рефакторинг структуры проекта
 
 **Файлы:**
@@ -26,15 +38,12 @@
 - `.claude/CLAUDE.md` - упрощён, ссылка на ECS_PATTERN.md, обновлён Quick Reference
 - `.claude/ECS_PATTERN.md` - восстановлен (универсальный шаблон архитектуры)
 
-### Удалено
-- `Assets/Code/Art/VFX/NPCAnimator.cs` - удалён дубликат (оставлен Art/Animation/NPCAnimator.cs)
-
 ### Перемещено (Gameplay/Features/)
 - `InputFeature.cs` → `Features/Input/`
 - `HeroFeature.cs` → `Features/Hero/`
 - `PedestrianFeature.cs` → `Features/Pedestrian/`
 - `PhysicsFeature.cs`, `PhysicsComponents.cs` → `Features/Physics/`
-- `CollisionFeature.cs`, `PhysicsCollisionHandler.cs` → `Features/Collision/`
+- `CollisionFeature.cs` → `Features/Collision/`
 - `RagdollFeature.cs` → `Features/Ragdoll/`
 - `FeedbackSystem.cs` → `Features/Feedback/FeedbackFeature.cs` (переименован)
 - `QuestFeature.cs` → `Features/Quest/`
@@ -50,9 +59,8 @@
 ### Перемещено (Infrastructure/)
 - `EcsBootstrap.cs` → `Infrastructure/Bootstrap/`
 - `SystemFactory.cs`, `Feature.cs` → `Infrastructure/Systems/`
-- `EntityBehaviour.cs`, `ViewSystems.cs` → `Infrastructure/View/`
+- `EntityBehaviour.cs`, `ViewSystems.cs`, `PhysicsCollisionHandler.cs` → `Infrastructure/View/`
 - `CameraFollow.cs` → `Art/VFX/`
-- `PhysicsCollisionHandler.cs` → `Gameplay/Features/Collision/`
 
 ### Перемещено (Art/)
 - `ModelFactory.cs`, `ProceduralMeshGenerator.cs` → `Art/Procedural/`
@@ -60,7 +68,6 @@
 ### Обновлённые namespaces
 - `Code.Gameplay.Input` → `Code.Gameplay.Features.Input`
 - `Code.Gameplay` (DaySession) → `Code.Gameplay.Features.Economy`
-- `Code.Infrastructure.View` (PhysicsCollisionHandler) → `Code.Gameplay.Features.Collision`
 - `Code.Common` → разделён на `Code.Common.Services`, `Code.Common.Components`, `Code.Common.Extensions`
 - `Code.Infrastructure` (EcsBootstrap) → `Code.Infrastructure.Bootstrap`
 - `Code.Infrastructure.Systems` (Feature.cs) - добавлен namespace
