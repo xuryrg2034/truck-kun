@@ -22,6 +22,7 @@ MonoBehaviour:
     BaseSpeed: 2
     Category: 0
     DisplayName: Student
+    CrossingChance: 1
   - Prefab: {fileID: 5756689042150815301, guid: e1774317e0eed2e4288d0e8f88df53dc, type: 3}
     Kind: 1
     Color: {r: 0.95, g: 0.95, b: 1, a: 1}
@@ -31,6 +32,7 @@ MonoBehaviour:
     BaseSpeed: 2
     Category: 0
     DisplayName: Student
+    CrossingChance: 1
   _spawnWeights:
   - Kind: 0
     Weight: 0.25

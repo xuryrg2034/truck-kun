@@ -63,6 +63,9 @@ namespace Code.Configs.Spawning
         [Tooltip("Layer mask for obstacle detection")]
         public LayerMask ObstacleLayer;
 
+        [Tooltip("Layer mask for ground detection (raycast down to find surface)")]
+        public LayerMask GroundLayer;
+
         [Tooltip("Maximum attempts to find valid spawn position")]
         public int MaxSpawnAttempts = 3;
 

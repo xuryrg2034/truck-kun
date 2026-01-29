@@ -23,6 +23,11 @@ namespace Code.Gameplay.Features.Pedestrian
     public PedestrianCategory Category = PedestrianCategory.Normal;
     public string DisplayName = "Pedestrian";
 
+    [Header("Behavior")]
+    [Range(0f, 1f)]
+    [Tooltip("Chance this pedestrian will cross the road (0 = always stands, 1 = always crosses)")]
+    public float CrossingChance = 0.7f;
+
     public static PedestrianVisualData Default(PedestrianKind kind)
     {
       return kind switch
@@ -35,7 +40,8 @@ namespace Code.Gameplay.Features.Pedestrian
           ForwardTilt = 15f,                     // Bent forward (backpack)
           BaseSpeed = 2f,
           Category = PedestrianCategory.Normal,
-          DisplayName = "Student"
+          DisplayName = "Student",
+          CrossingChance = 0.9f                  // Students rush across
         },
         PedestrianKind.Salaryman => new PedestrianVisualData
         {
@@ -45,7 +51,8 @@ namespace Code.Gameplay.Features.Pedestrian
           ForwardTilt = 0f,
           BaseSpeed = 1.8f,
           Category = PedestrianCategory.Normal,
-          DisplayName = "Salaryman"
+          DisplayName = "Salaryman",
+          CrossingChance = 0.8f                  // Busy commuters
         },
         PedestrianKind.Grandma => new PedestrianVisualData
         {
@@ -55,7 +62,8 @@ namespace Code.Gameplay.Features.Pedestrian
           ForwardTilt = 10f,                     // Slightly hunched
           BaseSpeed = 0.8f,                      // Slow
           Category = PedestrianCategory.Protected,
-          DisplayName = "Grandma"
+          DisplayName = "Grandma",
+          CrossingChance = 0.4f                  // Often just stands
         },
         PedestrianKind.OldMan => new PedestrianVisualData
         {
@@ -65,7 +73,8 @@ namespace Code.Gameplay.Features.Pedestrian
           ForwardTilt = 8f,
           BaseSpeed = 0.9f,
           Category = PedestrianCategory.Protected,
-          DisplayName = "Old Man"
+          DisplayName = "Old Man",
+          CrossingChance = 0.5f                  // Sometimes crosses slowly
         },
         PedestrianKind.Teenager => new PedestrianVisualData
         {
@@ -75,7 +84,8 @@ namespace Code.Gameplay.Features.Pedestrian
           ForwardTilt = -5f,                     // Leaning back (cool pose)
           BaseSpeed = 2.2f,                      // Fast
           Category = PedestrianCategory.Normal,
-          DisplayName = "Teenager"
+          DisplayName = "Teenager",
+          CrossingChance = 0.85f                 // Active, always on the move
         },
         _ => new PedestrianVisualData
         {
@@ -85,7 +95,8 @@ namespace Code.Gameplay.Features.Pedestrian
           ForwardTilt = 0f,
           BaseSpeed = 1.5f,
           Category = PedestrianCategory.Normal,
-          DisplayName = "Pedestrian"
+          DisplayName = "Pedestrian",
+          CrossingChance = 0.7f
         }
       };
     }

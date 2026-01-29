@@ -120,8 +120,11 @@ namespace Code.Gameplay.Features.Pedestrian.Factory
       rb.angularDamping = _physicsSettings?.AngularDrag ?? 0.5f;
       rb.interpolation = RigidbodyInterpolation.Interpolate;
 
-      // Freeze rotation to keep pedestrian upright (except Y for turning)
-      rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+      // Freeze all rotation to prevent spinning from collisions
+      rb.constraints =
+        RigidbodyConstraints.FreezeRotationX |
+        RigidbodyConstraints.FreezeRotationY |
+        RigidbodyConstraints.FreezeRotationZ;
 
       return pedestrian;
     }

@@ -83,8 +83,8 @@ namespace Code.Gameplay.Features.Pedestrian.Systems
       // Calculate spawn position
       Vector3 position = CalculateSpawnPosition(heroPosition);
 
-      // Determine if this pedestrian will cross the road
-      bool isCrossing = UnityEngine.Random.value < _config.CrossingChance;
+      // Determine if this pedestrian will cross the road (per-type chance)
+      bool isCrossing = UnityEngine.Random.value < visualData.CrossingChance;
 
       // Calculate X position based on crossing behavior
       float centerX = 0f;
@@ -110,6 +110,10 @@ namespace Code.Gameplay.Features.Pedestrian.Systems
         position.x = centerX + UnityEngine.Random.Range(-spawnWidth, spawnWidth);
       }
 
+      // Validate: check ground exists below spawn point
+      if (!HasGroundBelow(position))
+        return;
+
       // Validate spawn position (check for obstacles)
       if (_config.CheckOverlap && !TryFindValidPosition(ref position, isCrossing, centerX, halfRoadWidth))
       {
@@ -126,7 +130,7 @@ namespace Code.Gameplay.Features.Pedestrian.Systems
       if (isCrossing)
       {
         float crossingSpeed = visualData.BaseSpeed * _config.CrossingSpeedMultiplier;
-        entity.AddCrossingPedestrian(startX, targetX, crossingSpeed, !startFromLeft);
+        entity.AddCrossingPedestrian(startX, targetX, crossingSpeed, startFromLeft);
       }
 
       entity.AddWorldPosition(position);
@@ -154,22 +158,48 @@ namespace Code.Gameplay.Features.Pedestrian.Systems
 
       EntityBehaviour entityBehaviour = visual.AddComponent<EntityBehaviour>();
       entityBehaviour.SetEntity(entity);
+
+      // Register Rigidbody in ECS so UpdateTransformPositionSystem
+      // excludes this entity (otherwise it overwrites physics position every frame)
+      Rigidbody rb = visual.GetComponent<Rigidbody>();
+      if (rb != null && !entity.hasRigidbody)
+      {
+        entity.AddRigidbody(rb);
+      }
     }
 
     /// <summary>
-    /// Calculate spawn position with fixed Y and Z variation.
+    /// Calculate spawn position with ground detection.
+    /// Uses raycast to find actual ground surface.
     /// </summary>
     private Vector3 CalculateSpawnPosition(Vector3 heroPosition)
     {
-      // Fixed Y (ground level) - FIXES: pedestrians spawning in air when truck jumps
-      float y = _config.SpawnY;
-
       // Z ahead of hero with random variation
       float z = heroPosition.z + _config.MinSpawnDistanceAhead;
       z += UnityEngine.Random.Range(0f, _config.SpawnZVariation);
 
+      // Start with configured Y, then try to find ground
+      float y = _config.SpawnY;
+
+      // Raycast down from above to find ground surface
+      Vector3 rayOrigin = new Vector3(0f, y + 50f, z);
+      if (UnityEngine.Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit hit, 100f, _config.GroundLayer))
+      {
+        // Place slightly above ground to avoid clipping
+        y = hit.point.y + 0.05f;
+      }
+
       // X will be set later based on crossing behavior
       return new Vector3(0f, y, z);
+    }
+
+    /// <summary>
+    /// Check if there is ground at position. Returns false if pedestrian would float.
+    /// </summary>
+    private bool HasGroundBelow(Vector3 position)
+    {
+      Vector3 rayOrigin = new Vector3(position.x, position.y + 2f, position.z);
+      return UnityEngine.Physics.Raycast(rayOrigin, Vector3.down, 10f, _config.GroundLayer);
     }
 
     /// <summary>

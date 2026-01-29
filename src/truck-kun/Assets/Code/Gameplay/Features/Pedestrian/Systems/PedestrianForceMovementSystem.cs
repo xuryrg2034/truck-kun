@@ -6,7 +6,7 @@ using UnityEngine;
 namespace Code.Gameplay.Features.Pedestrian.Systems
 {
   /// <summary>
-  /// Moves crossing pedestrians using physics forces instead of direct velocity.
+  /// Moves crossing pedestrians by directly setting velocity.
   /// Should be added to PhysicsFeature to run in FixedUpdate.
   /// </summary>
   public class PedestrianForceMovementSystem : IExecuteSystem
@@ -34,11 +34,11 @@ namespace Code.Gameplay.Features.Pedestrian.Systems
     {
       foreach (GameEntity pedestrian in _crossingPedestrians.GetEntities(_buffer))
       {
-        ApplyMovementForce(pedestrian);
+        MovePedestrian(pedestrian);
       }
     }
 
-    private void ApplyMovementForce(GameEntity pedestrian)
+    private void MovePedestrian(GameEntity pedestrian)
     {
       if (!pedestrian.hasView)
         return;
@@ -56,24 +56,6 @@ namespace Code.Gameplay.Features.Pedestrian.Systems
       float speed = pedestrian.crossingPedestrian.Speed;
       bool movingRight = pedestrian.crossingPedestrian.MovingRight;
 
-      // Calculate desired velocity
-      float direction = movingRight ? 1f : -1f;
-      Vector3 desiredVelocity = new Vector3(direction * speed, 0f, 0f);
-
-      // Limit max speed
-      float maxSpeed = Mathf.Min(speed, _settings.MaxSpeed);
-      desiredVelocity = Vector3.ClampMagnitude(desiredVelocity, maxSpeed);
-
-      // Calculate force to reach desired velocity
-      Vector3 currentVelocity = rb.linearVelocity;
-      currentVelocity.y = 0f; // Ignore vertical velocity for horizontal movement
-
-      Vector3 velocityDiff = desiredVelocity - currentVelocity;
-      Vector3 force = velocityDiff * _settings.MoveForce;
-
-      // Apply force
-      rb.AddForce(force, ForceMode.Force);
-
       // Check if reached target
       float currentX = component.transform.position.x;
       bool reachedTarget = movingRight
@@ -83,16 +65,28 @@ namespace Code.Gameplay.Features.Pedestrian.Systems
       if (reachedTarget)
       {
         // Stop horizontal movement and remove crossing component
-        rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, rb.linearVelocity.z);
+        rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
         pedestrian.RemoveCrossingPedestrian();
 
-        // Optionally rotate back to face forward
+        // Rotate back to face forward
         if (pedestrian.hasPedestrianType)
         {
           PedestrianVisualData data = PedestrianVisualData.Default(pedestrian.pedestrianType.Value);
           component.transform.rotation = Quaternion.Euler(data.ForwardTilt, 0f, 0f);
         }
+        return;
       }
+
+      // Set velocity directly — reliable for arcade movement
+      float moveSpeed = Mathf.Min(speed, _settings.MaxSpeed);
+      float direction = movingRight ? 1f : -1f;
+
+      rb.WakeUp();
+      rb.linearVelocity = new Vector3(
+        direction * moveSpeed,
+        rb.linearVelocity.y,
+        0f
+      );
 
       // Sync world position with physics
       if (pedestrian.hasWorldPosition)

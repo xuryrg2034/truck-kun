@@ -16,10 +16,10 @@ MonoBehaviour:
   MaxSpawnInterval: 3
   MaxActive: 12
   AllowedKinds: 
-  CrossingChance: 0.7
-  CrossingSpeedMultiplier: 1
+  CrossingChance: 1
+  CrossingSpeedMultiplier: 10000
   RotateToCrossingDirection: 1
-  DespawnDistance: 25
+  DespawnDistance: 25000
   SpawnY: 0
   MinSpawnDistanceAhead: 25
   SpawnZVariation: 10
@@ -31,5 +31,8 @@ MonoBehaviour:
   ObstacleLayer:
     serializedVersion: 2
     m_Bits: 1280
+  GroundLayer:
+    serializedVersion: 2
+    m_Bits: 2048
   MaxSpawnAttempts: 3
   SpawnPool: []
