@@ -1,5 +1,5 @@
 using System;
-using Code.DevTools;
+using Code.Debug;
 using Code.Gameplay.Features.Hero;
 using Code.Gameplay.Features.Physics;
 using Code.Infrastructure;
@@ -8,7 +8,7 @@ using Entitas;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace Code.DebugTools
+namespace Code.Debug
 {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
   /// <summary>

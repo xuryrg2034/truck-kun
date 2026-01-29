@@ -3,7 +3,7 @@ using System;
 using Code.Infrastructure;
 using UnityEngine;
 
-namespace Code.DevTools
+namespace Code.Debug
 {
   /// <summary>
   /// Debug service with cheat methods for testing
