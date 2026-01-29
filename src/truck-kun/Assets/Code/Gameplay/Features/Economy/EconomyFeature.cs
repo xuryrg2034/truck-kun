@@ -10,8 +10,6 @@ using Entitas.CodeGeneration.Attributes;
 using UnityEngine;
 using Zenject;
 
-// Note: EconomyConfig moved to Code.Configs.Global.EconomyConfig
-
 namespace Code.Gameplay.Features.Economy
 {
   #region Components
@@ -36,20 +34,6 @@ namespace Code.Gameplay.Features.Economy
 
   #endregion
 
-  #region Legacy Settings (kept for backward compatibility)
-
-  [Serializable]
-  public class EconomySettings
-  {
-    public int StartingMoney = 1000;
-    public int ViolationPenalty = 100;
-    public int BaseQuestReward = 50;
-  }
-
-  // Note: EconomyConfig ScriptableObject moved to Code.Configs.Global.EconomyConfig
-
-  #endregion
-
   #region Service
 
   public interface IMoneyService
@@ -69,26 +53,18 @@ namespace Code.Gameplay.Features.Economy
   public class MoneyService : IMoneyService
   {
     private readonly MetaContext _meta;
-    private readonly EconomySettings _legacySettings;
-    private readonly EconomyConfig _newConfig;
+    private readonly EconomyConfig _config;
     private readonly IUpgradeService _upgradeService;
-
-    // Properties to get values from new config or fall back to legacy
-    private int StartingMoney => _newConfig != null ? _newConfig.StartingMoney : _legacySettings?.StartingMoney ?? 1000;
 
     public MoneyService(
       MetaContext meta,
-      [InjectOptional] EconomySettings settings = null,
-      [InjectOptional] EconomyConfig newConfig = null,
+      EconomyConfig config,
       [InjectOptional] IUpgradeService upgradeService = null)
     {
       _meta = meta;
-      _legacySettings = settings ?? new EconomySettings();
-      _newConfig = newConfig;
+      _config = config ?? throw new ArgumentNullException(nameof(config),
+        "EconomyConfig is required! Assign it in LevelConfig.");
       _upgradeService = upgradeService;
-
-      if (_newConfig != null)
-        Debug.Log("[MoneyService] Using new EconomyConfig");
     }
 
     public int Balance => _meta.hasPlayerMoney ? _meta.playerMoney.Amount : 0;
@@ -101,7 +77,7 @@ namespace Code.Gameplay.Features.Economy
       {
         // Load saved balance from PlayerPrefs, or use starting money
         int savedBalance = PlayerPrefs.GetInt("PlayerBalance", -1);
-        int initialMoney = savedBalance >= 0 ? savedBalance : StartingMoney;
+        int initialMoney = savedBalance >= 0 ? savedBalance : _config.StartingMoney;
         _meta.SetPlayerMoney(initialMoney);
       }
 
@@ -201,22 +177,16 @@ namespace Code.Gameplay.Features.Economy
   public class ProcessViolationPenaltiesSystem : ReactiveSystem<GameEntity>
   {
     private readonly IMoneyService _moneyService;
-    private readonly EconomySettings _legacySettings;
-    private readonly EconomyConfig _newConfig;
-
-    private int ViolationPenalty => _newConfig != null
-      ? _newConfig.ViolationPenalty
-      : _legacySettings?.ViolationPenalty ?? 100;
+    private readonly EconomyConfig _config;
 
     public ProcessViolationPenaltiesSystem(
       GameContext game,
       IMoneyService moneyService,
-      [InjectOptional] EconomySettings settings = null,
-      [InjectOptional] EconomyConfig newConfig = null) : base(game)
+      EconomyConfig config) : base(game)
     {
       _moneyService = moneyService;
-      _legacySettings = settings ?? new EconomySettings();
-      _newConfig = newConfig;
+      _config = config ?? throw new ArgumentNullException(nameof(config),
+        "EconomyConfig is required! Assign it in LevelConfig.");
     }
 
     protected override ICollector<GameEntity> GetTrigger(IContext<GameEntity> context)
@@ -242,7 +212,7 @@ namespace Code.Gameplay.Features.Economy
 
       foreach (GameEntity violation in entities)
       {
-        _moneyService.ApplyPenalty(ViolationPenalty);
+        _moneyService.ApplyPenalty(_config.ViolationPenalty);
       }
     }
   }

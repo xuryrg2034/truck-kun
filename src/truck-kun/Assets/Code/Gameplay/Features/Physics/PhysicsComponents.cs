@@ -211,7 +211,7 @@ namespace Code.Gameplay.Features.Physics
   #region Settings
 
   /// <summary>
-  /// Default physics settings (can be used in GameBalance)
+  /// Default physics settings
   /// </summary>
   [System.Serializable]
   public class PhysicsSettings

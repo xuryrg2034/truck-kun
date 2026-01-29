@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Code.Art.Animation;
-using Code.Balance;
 using Code.Common.Services;
 using Code.Configs.Spawning;
 using Code.Gameplay.Features.Hero;
@@ -290,46 +289,6 @@ namespace Code.Gameplay.Features.Pedestrian
 
   #endregion
 
-  #region Spawn Settings
-
-  [Serializable]
-  public class PedestrianSpawnSettings
-  {
-    [Header("Spawn Settings")]
-    public float SpawnInterval = 1.5f;
-    public float SpawnDistanceAhead = 18f;
-    public float DespawnDistanceBehind = 12f;
-    public int MaxActive = 12;
-    public float LateralMargin = 0.5f;
-
-    [Header("Allowed Pedestrian Types")]
-    [Tooltip("Which pedestrian types can spawn on this level. Empty = all types.")]
-    public List<PedestrianKind> AllowedKinds = new();
-
-    [Header("Crossing Behavior")]
-    [Range(0f, 1f)] public float CrossingChance = 0.3f;
-    public float CrossingSpeedMultiplier = 1f;
-    public float RoadCenterOffset = 0f;
-    public float SidewalkOffset = 1.5f;  // Extra offset from road edge for spawning
-
-    [Header("Crossing Visual")]
-    public bool RotateToCrossingDirection = true;
-
-    /// <summary>
-    /// Check if a pedestrian kind is allowed on this level
-    /// </summary>
-    public bool IsKindAllowed(PedestrianKind kind)
-    {
-      // Empty list = all types allowed
-      if (AllowedKinds == null || AllowedKinds.Count == 0)
-        return true;
-
-      return AllowedKinds.Contains(kind);
-    }
-  }
-
-  #endregion
-
   #region Factory
 
   public interface IPedestrianFactory
@@ -345,19 +304,16 @@ namespace Code.Gameplay.Features.Pedestrian
   public class PedestrianFactory : IPedestrianFactory
   {
     private readonly PedestrianConfig _config;
-    private readonly IBalanceProvider _balanceProvider;
     private readonly PedestrianPhysicsSettings _physicsSettings;
     private readonly Dictionary<PedestrianKind, PedestrianVisualData> _visualCache = new();
 
     public PedestrianFactory(
       PedestrianConfig config,
-      PedestrianPhysicsSettings physicsSettings = null,
-      IBalanceProvider balanceProvider = null)
+      PedestrianPhysicsSettings physicsSettings = null)
     {
       _config = config ?? throw new ArgumentNullException(nameof(config),
         "PedestrianConfig is required! Assign it in GameplaySceneInstaller.");
       _physicsSettings = physicsSettings;
-      _balanceProvider = balanceProvider;
       InitializeCache();
     }
 
@@ -366,25 +322,7 @@ namespace Code.Gameplay.Features.Pedestrian
       // Cache all visual data from config
       foreach (PedestrianKind kind in Enum.GetValues(typeof(PedestrianKind)))
       {
-        PedestrianVisualData data = _config.GetVisualData(kind);
-
-        // Override with GameBalance values if available
-        if (_balanceProvider?.Balance != null)
-        {
-          PedestrianTypeBalance balanceData = _balanceProvider.Balance.GetPedestrianTypeBalance(kind);
-          if (balanceData != null)
-          {
-            // Only override color if it's not white (white = default, not set)
-            if (balanceData.Color != Color.white)
-              data.Color = balanceData.Color;
-
-            data.Scale = balanceData.Scale;
-            data.Speed = balanceData.Speed;
-            data.ForwardTilt = balanceData.ForwardTilt;
-          }
-        }
-
-        _visualCache[kind] = data;
+        _visualCache[kind] = _config.GetVisualData(kind);
       }
     }
 
@@ -507,9 +445,7 @@ namespace Code.Gameplay.Features.Pedestrian
   {
     private readonly GameContext _game;
     private readonly ITimeService _time;
-    private readonly RunnerMovementSettings _runnerSettings;
-    private readonly PedestrianSpawnSettings _legacySettings;
-    private readonly PedestrianSpawnConfig _newConfig;
+    private readonly PedestrianSpawnConfig _config;
     private readonly IHeroSpawnPoint _spawnPoint;
     private readonly IIdentifierService _identifiers;
     private readonly IPedestrianFactory _factory;
@@ -517,68 +453,37 @@ namespace Code.Gameplay.Features.Pedestrian
     private readonly IGroup<GameEntity> _pedestrians;
     private readonly List<GameEntity> _heroBuffer = new(1);
     private float _cooldown;
-    private int _maxActive;
-
-    // Properties to get values from new config or fall back to legacy
-    private float SpawnDistanceAhead => _newConfig != null ? _newConfig.SpawnDistanceAhead : _legacySettings?.SpawnDistanceAhead ?? 18f;
-    private float DespawnDistance => _newConfig != null ? _newConfig.DespawnDistance : _legacySettings?.DespawnDistanceBehind ?? 12f;
-    private float CrossingChance => _newConfig != null ? _newConfig.CrossingChance : _legacySettings?.CrossingChance ?? 0.3f;
-    private float RoadWidth => _newConfig != null ? _newConfig.RoadWidth : _runnerSettings?.RoadWidth ?? 8f;
 
     public PedestrianSpawnSystem(
       GameContext game,
       ITimeService time,
-      RunnerMovementSettings runnerSettings,
-      PedestrianSpawnSettings settings,
+      PedestrianSpawnConfig config,
       IHeroSpawnPoint spawnPoint,
       IIdentifierService identifiers,
-      IPedestrianFactory factory,
-      [InjectOptional] PedestrianSpawnConfig newConfig = null)
+      IPedestrianFactory factory)
     {
       _game = game;
       _time = time;
-      _runnerSettings = runnerSettings;
-      _legacySettings = settings;
-      _newConfig = newConfig;
+      _config = config ?? throw new ArgumentNullException(nameof(config),
+        "PedestrianSpawnConfig is required! Assign it in LevelConfig.");
       _spawnPoint = spawnPoint;
       _identifiers = identifiers;
       _factory = factory;
       _heroes = game.GetGroup(GameMatcher.AllOf(GameMatcher.Hero, GameMatcher.WorldPosition));
       _pedestrians = game.GetGroup(GameMatcher.Pedestrian);
-
-      // Initialize from new config or legacy
-      if (_newConfig != null)
-      {
-        _cooldown = _newConfig.GetRandomInterval();
-        _maxActive = 20; // Default max for new config
-        Debug.Log("[PedestrianSpawnSystem] Using new PedestrianSpawnConfig");
-      }
-      else if (_legacySettings != null)
-      {
-        _cooldown = _legacySettings.SpawnInterval;
-        _maxActive = _legacySettings.MaxActive;
-        Debug.Log("[PedestrianSpawnSystem] Using legacy PedestrianSpawnSettings");
-      }
-      else
-      {
-        _cooldown = 1f;
-        _maxActive = 10;
-      }
+      _cooldown = _config.GetRandomInterval();
     }
 
     public void Execute()
     {
-      if (_legacySettings == null && _newConfig == null)
-        return;
-
       _cooldown -= _time.DeltaTime;
 
       if (_cooldown > 0f)
         return;
 
-      if (_pedestrians.count >= _maxActive)
+      if (_pedestrians.count >= _config.MaxActive)
       {
-        _cooldown = GetNextInterval();
+        _cooldown = _config.GetRandomInterval();
         return;
       }
 
@@ -591,27 +496,18 @@ namespace Code.Gameplay.Features.Pedestrian
 
       if (hero == null)
       {
-        _cooldown = GetNextInterval();
+        _cooldown = _config.GetRandomInterval();
         return;
       }
 
       SpawnPedestrian(hero.worldPosition.Value);
-      _cooldown = GetNextInterval();
-    }
-
-    private float GetNextInterval()
-    {
-      if (_newConfig != null)
-        return _newConfig.GetRandomInterval();
-
-      return Mathf.Max(0.05f, _legacySettings?.SpawnInterval ?? 1f);
+      _cooldown = _config.GetRandomInterval();
     }
 
     private void SpawnPedestrian(Vector3 heroPosition)
     {
-      // Use allowed kinds from level settings (empty = all types)
-      List<PedestrianKind> allowedKinds = _legacySettings?.AllowedKinds;
-      PedestrianKind kind = _factory.SelectRandomKind(allowedKinds);
+      // Use allowed kinds from config (empty = all types)
+      PedestrianKind kind = _factory.SelectRandomKind(_config.AllowedKinds);
 
       // Skip spawn if no valid prefab (SelectRandomKind logs error)
       if (!_factory.HasPrefab(kind))
@@ -625,17 +521,15 @@ namespace Code.Gameplay.Features.Pedestrian
       entity.AddId(_identifiers.Next());
 
       float centerX = _spawnPoint != null ? _spawnPoint.Position.x : 0f;
-      centerX += _legacySettings?.RoadCenterOffset ?? 0f;
-      float halfRoadWidth = RoadWidth * 0.5f;
+      float halfRoadWidth = _config.RoadWidth * 0.5f;
 
       Vector3 position = heroPosition;
-      position.z += SpawnDistanceAhead;
+      position.z += _config.SpawnDistanceAhead;
 
       // Determine if this pedestrian will cross the road
-      bool isCrossing = UnityEngine.Random.value < CrossingChance;
+      bool isCrossing = UnityEngine.Random.value < _config.CrossingChance;
 
-      float sidewalkOffset = halfRoadWidth + (_legacySettings?.SidewalkOffset ?? 1.5f);
-      float lateralMargin = _legacySettings?.LateralMargin ?? 0.5f;
+      float sidewalkOffset = halfRoadWidth + _config.SidewalkOffset;
 
       if (isCrossing)
       {
@@ -648,15 +542,14 @@ namespace Code.Gameplay.Features.Pedestrian
         position.x = startX;
 
         // Calculate crossing speed based on type
-        float crossingSpeedMult = _legacySettings?.CrossingSpeedMultiplier ?? 1f;
-        float crossingSpeed = visualData.BaseSpeed * crossingSpeedMult;
+        float crossingSpeed = visualData.BaseSpeed * _config.CrossingSpeedMultiplier;
 
         entity.AddCrossingPedestrian(startX, targetX, crossingSpeed, !startFromLeft);
       }
       else
       {
         // Regular pedestrian: spawn randomly on the road
-        float spawnWidth = halfRoadWidth - lateralMargin;
+        float spawnWidth = halfRoadWidth - _config.LateralMargin;
         position.x = centerX + UnityEngine.Random.Range(-spawnWidth, spawnWidth);
       }
 
@@ -673,8 +566,7 @@ namespace Code.Gameplay.Features.Pedestrian
       }
 
       // Rotate crossing pedestrians to face their direction
-      bool rotateToCrossing = _legacySettings?.RotateToCrossingDirection ?? true;
-      if (isCrossing && rotateToCrossing)
+      if (isCrossing && _config.RotateToCrossingDirection)
       {
         bool movingRight = entity.crossingPedestrian.MovingRight;
         visual.transform.rotation = Quaternion.Euler(
@@ -692,19 +584,18 @@ namespace Code.Gameplay.Features.Pedestrian
   public class PedestrianCrossingSystem : IExecuteSystem
   {
     private readonly ITimeService _time;
-    private readonly PedestrianSpawnSettings _legacySettings;
+    private readonly PedestrianSpawnConfig _config;
     private readonly IGroup<GameEntity> _crossingPedestrians;
     private readonly List<GameEntity> _buffer = new(16);
-
-    private bool RotateToCrossingDirection => _legacySettings?.RotateToCrossingDirection ?? true;
 
     public PedestrianCrossingSystem(
       GameContext game,
       ITimeService time,
-      PedestrianSpawnSettings settings)
+      PedestrianSpawnConfig config)
     {
       _time = time;
-      _legacySettings = settings;
+      _config = config ?? throw new ArgumentNullException(nameof(config),
+        "PedestrianSpawnConfig is required! Assign it in LevelConfig.");
       _crossingPedestrians = game.GetGroup(
         GameMatcher.AllOf(GameMatcher.Pedestrian, GameMatcher.CrossingPedestrian, GameMatcher.WorldPosition)
       );
@@ -740,7 +631,7 @@ namespace Code.Gameplay.Features.Pedestrian
           pedestrian.RemoveCrossingPedestrian();
 
           // Optionally rotate back to face forward
-          if (RotateToCrossingDirection && pedestrian.hasView)
+          if (_config.RotateToCrossingDirection && pedestrian.hasView)
           {
             IEntityView view = pedestrian.view.Value;
             if (view is Component comp)
@@ -772,33 +663,24 @@ namespace Code.Gameplay.Features.Pedestrian
 
   public class PedestrianDespawnSystem : IExecuteSystem
   {
-    private readonly PedestrianSpawnSettings _legacySettings;
-    private readonly PedestrianSpawnConfig _newConfig;
+    private readonly PedestrianSpawnConfig _config;
     private readonly IGroup<GameEntity> _heroes;
     private readonly IGroup<GameEntity> _pedestrians;
     private readonly List<GameEntity> _heroBuffer = new(1);
     private readonly List<GameEntity> _pedestrianBuffer = new(32);
 
-    private float DespawnDistance => _newConfig != null
-      ? _newConfig.DespawnDistance
-      : _legacySettings?.DespawnDistanceBehind ?? 12f;
-
     public PedestrianDespawnSystem(
       GameContext game,
-      PedestrianSpawnSettings settings,
-      [InjectOptional] PedestrianSpawnConfig newConfig = null)
+      PedestrianSpawnConfig config)
     {
-      _legacySettings = settings;
-      _newConfig = newConfig;
+      _config = config ?? throw new ArgumentNullException(nameof(config),
+        "PedestrianSpawnConfig is required! Assign it in LevelConfig.");
       _heroes = game.GetGroup(GameMatcher.AllOf(GameMatcher.Hero, GameMatcher.WorldPosition));
       _pedestrians = game.GetGroup(GameMatcher.AllOf(GameMatcher.Pedestrian, GameMatcher.WorldPosition));
     }
 
     public void Execute()
     {
-      if (_legacySettings == null && _newConfig == null)
-        return;
-
       GameEntity hero = null;
       foreach (GameEntity heroEntity in _heroes.GetEntities(_heroBuffer))
       {
@@ -809,8 +691,7 @@ namespace Code.Gameplay.Features.Pedestrian
       if (hero == null)
         return;
 
-      float distanceBehind = Mathf.Max(0f, DespawnDistance);
-      float thresholdZ = hero.worldPosition.Value.z - distanceBehind;
+      float thresholdZ = hero.worldPosition.Value.z - _config.DespawnDistance;
 
       foreach (GameEntity pedestrian in _pedestrians.GetEntities(_pedestrianBuffer))
       {

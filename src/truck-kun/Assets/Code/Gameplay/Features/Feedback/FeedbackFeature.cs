@@ -5,39 +5,13 @@ using Code.Common.Components;
 using Code.Configs.Global;
 using AudioHelper = Code.Audio.Audio;
 using Code.Gameplay.Features.Collision;
-using Code.Gameplay.Features.Economy;
 using Code.Gameplay.Features.Pedestrian;
 using Code.Infrastructure.Systems;
 using Entitas;
 using UnityEngine;
-using Zenject;
 
 namespace Code.Gameplay.Features.Feedback
 {
-  #region Settings
-
-  [Serializable]
-  public class FeedbackSettings
-  {
-    [Header("Particles")]
-    public int ParticleBurstCount = 15;
-    public float ParticleLifetime = 1f;
-    public float ParticleSpeed = 3f;
-    public float ParticleGravity = 2f;
-    public float ParticleSize = 0.15f;
-
-    [Header("Floating Text")]
-    public float FloatSpeed = 2f;
-    public float FloatDuration = 1.2f;
-    public int FontSize = 32;
-
-    [Header("Colors")]
-    public Color RewardColor = new Color(0.2f, 1f, 0.3f);
-    public Color PenaltyColor = new Color(1f, 0.3f, 0.2f);
-  }
-
-  #endregion
-
   #region Hit Effect Service
 
   public interface IHitEffectService
@@ -47,26 +21,12 @@ namespace Code.Gameplay.Features.Feedback
 
   public class HitEffectService : IHitEffectService
   {
-    private readonly FeedbackSettings _legacySettings;
-    private readonly FeedbackConfig _newConfig;
+    private readonly FeedbackConfig _config;
 
-    // Properties to get values from new config or fall back to legacy
-    private int ParticleBurstCount => _newConfig != null ? _newConfig.ParticleBurstCount : _legacySettings?.ParticleBurstCount ?? 15;
-    private float ParticleLifetime => _newConfig != null ? _newConfig.ParticleLifetime : _legacySettings?.ParticleLifetime ?? 1f;
-    private float ParticleSpeed => _newConfig != null ? _newConfig.ParticleSpeed : _legacySettings?.ParticleSpeed ?? 3f;
-    private float ParticleSize => _legacySettings?.ParticleSize ?? 0.15f;
-    private float ParticleGravity => _legacySettings?.ParticleGravity ?? 2f;
-    private Color PenaltyColor => _newConfig != null ? _newConfig.PenaltyColor : _legacySettings?.PenaltyColor ?? new Color(1f, 0.3f, 0.2f);
-
-    public HitEffectService(
-      [InjectOptional] FeedbackSettings settings = null,
-      [InjectOptional] FeedbackConfig newConfig = null)
+    public HitEffectService(FeedbackConfig config)
     {
-      _legacySettings = settings ?? new FeedbackSettings();
-      _newConfig = newConfig;
-
-      if (_newConfig != null)
-        Debug.Log("[HitEffectService] Using new FeedbackConfig");
+      _config = config ?? throw new ArgumentNullException(nameof(config),
+        "FeedbackConfig is required! Assign it in LevelConfig.");
     }
 
     public void SpawnHitEffect(Vector3 position, PedestrianKind kind, bool isViolation)
@@ -77,12 +37,12 @@ namespace Code.Gameplay.Features.Feedback
       ParticleSystem ps = particleObj.AddComponent<ParticleSystem>();
 
       Color particleColor = isViolation
-        ? PenaltyColor
+        ? _config.PenaltyColor
         : PedestrianVisualData.Default(kind).Color;
 
       ConfigureParticleSystem(ps, particleColor);
 
-      UnityEngine.Object.Destroy(particleObj, ParticleLifetime + 0.5f);
+      UnityEngine.Object.Destroy(particleObj, _config.ParticleLifetime + 0.5f);
     }
 
     private void ConfigureParticleSystem(ParticleSystem ps, Color color)
@@ -92,20 +52,20 @@ namespace Code.Gameplay.Features.Feedback
       ParticleSystem.MainModule main = ps.main;
       main.duration = 0.1f;
       main.loop = false;
-      main.startLifetime = ParticleLifetime;
-      main.startSpeed = ParticleSpeed;
-      main.startSize = ParticleSize;
+      main.startLifetime = _config.ParticleLifetime;
+      main.startSpeed = _config.ParticleSpeed;
+      main.startSize = _config.ParticleSize;
       main.startColor = color;
-      main.gravityModifier = ParticleGravity;
+      main.gravityModifier = _config.ParticleGravity;
       main.simulationSpace = ParticleSystemSimulationSpace.World;
-      main.maxParticles = ParticleBurstCount + 5;
+      main.maxParticles = _config.ParticleBurstCount + 5;
 
       ParticleSystem.EmissionModule emission = ps.emission;
       emission.enabled = true;
       emission.rateOverTime = 0;
       emission.SetBursts(new ParticleSystem.Burst[]
       {
-        new ParticleSystem.Burst(0f, ParticleBurstCount)
+        new ParticleSystem.Burst(0f, _config.ParticleBurstCount)
       });
 
       ParticleSystem.ShapeModule shape = ps.shape;
@@ -150,27 +110,14 @@ namespace Code.Gameplay.Features.Feedback
 
   public class FloatingTextService : IFloatingTextService
   {
-    private readonly FeedbackSettings _legacySettings;
-    private readonly FeedbackConfig _newConfig;
+    private readonly FeedbackConfig _config;
     private readonly List<FloatingTextInstance> _activeTexts = new(16);
     private Camera _mainCamera;
 
-    // Properties to get values from new config or fall back to legacy
-    private float FloatSpeed => _newConfig != null ? _newConfig.TextRiseSpeed : _legacySettings?.FloatSpeed ?? 2f;
-    private float FloatDuration => _newConfig != null ? _newConfig.TextDuration : _legacySettings?.FloatDuration ?? 1.2f;
-    private int FontSize => _newConfig != null ? _newConfig.FontSize : _legacySettings?.FontSize ?? 32;
-    private Color RewardColor => _newConfig != null ? _newConfig.RewardColor : _legacySettings?.RewardColor ?? new Color(0.2f, 1f, 0.3f);
-    private Color PenaltyColor => _newConfig != null ? _newConfig.PenaltyColor : _legacySettings?.PenaltyColor ?? new Color(1f, 0.3f, 0.2f);
-
-    public FloatingTextService(
-      [InjectOptional] FeedbackSettings settings = null,
-      [InjectOptional] FeedbackConfig newConfig = null)
+    public FloatingTextService(FeedbackConfig config)
     {
-      _legacySettings = settings ?? new FeedbackSettings();
-      _newConfig = newConfig;
-
-      if (_newConfig != null)
-        Debug.Log("[FloatingTextService] Using new FeedbackConfig");
+      _config = config ?? throw new ArgumentNullException(nameof(config),
+        "FeedbackConfig is required! Assign it in LevelConfig.");
     }
 
     public void SpawnFloatingText(Vector3 worldPosition, string text, Color color)
@@ -183,7 +130,7 @@ namespace Code.Gameplay.Features.Feedback
         GameObject = textObj,
         WorldPosition = worldPosition,
         StartTime = Time.time,
-        Duration = FloatDuration,
+        Duration = _config.TextDuration,
         Canvas = textObj.GetComponentInParent<Canvas>()
       };
 
@@ -194,7 +141,7 @@ namespace Code.Gameplay.Features.Feedback
     {
       string prefix = isGain ? "+" : "";
       string text = $"{prefix}{amount}";
-      Color color = isGain ? RewardColor : PenaltyColor;
+      Color color = isGain ? _config.RewardColor : _config.PenaltyColor;
 
       SpawnFloatingText(worldPosition, text, color);
     }
@@ -221,7 +168,7 @@ namespace Code.Gameplay.Features.Feedback
       UnityEngine.UI.Text uiText = textObj.AddComponent<UnityEngine.UI.Text>();
       uiText.text = text;
       uiText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-      uiText.fontSize = FontSize * 3;
+      uiText.fontSize = _config.FontSize * 3;
       uiText.fontStyle = FontStyle.Bold;
       uiText.color = color;
       uiText.alignment = TextAnchor.MiddleCenter;
@@ -256,7 +203,7 @@ namespace Code.Gameplay.Features.Feedback
           continue;
         }
 
-        Vector3 offset = Vector3.up * (FloatSpeed * elapsed);
+        Vector3 offset = Vector3.up * (_config.TextRiseSpeed * elapsed);
         instance.GameObject.transform.position = instance.WorldPosition + offset;
 
         if (_mainCamera != null)
@@ -310,26 +257,20 @@ namespace Code.Gameplay.Features.Feedback
   {
     private readonly IHitEffectService _hitEffectService;
     private readonly IFloatingTextService _floatingTextService;
-    private readonly EconomySettings _legacyEconomySettings;
-    private readonly EconomyConfig _newEconomyConfig;
+    private readonly EconomyConfig _economyConfig;
     private readonly IGroup<GameEntity> _pedestrians;
     private readonly List<GameEntity> _pedBuffer = new(32);
-
-    private int ViolationPenalty => _newEconomyConfig != null
-      ? _newEconomyConfig.ViolationPenalty
-      : _legacyEconomySettings?.ViolationPenalty ?? 100;
 
     public HitFeedbackSystem(
       GameContext game,
       IHitEffectService hitEffectService,
       IFloatingTextService floatingTextService,
-      [InjectOptional] EconomySettings economySettings = null,
-      [InjectOptional] EconomyConfig newEconomyConfig = null) : base(game)
+      EconomyConfig economyConfig) : base(game)
     {
       _hitEffectService = hitEffectService;
       _floatingTextService = floatingTextService;
-      _legacyEconomySettings = economySettings ?? new EconomySettings();
-      _newEconomyConfig = newEconomyConfig;
+      _economyConfig = economyConfig ?? throw new ArgumentNullException(nameof(economyConfig),
+        "EconomyConfig is required! Assign it in LevelConfig.");
       _pedestrians = game.GetGroup(GameMatcher.AllOf(GameMatcher.Pedestrian, GameMatcher.WorldPosition, GameMatcher.Id));
     }
 
@@ -384,8 +325,7 @@ namespace Code.Gameplay.Features.Feedback
         // Spawn floating text
         if (isViolation)
         {
-          int penalty = ViolationPenalty;
-          _floatingTextService.SpawnMoneyText(hitPosition + Vector3.up, -penalty, false);
+          _floatingTextService.SpawnMoneyText(hitPosition + Vector3.up, -_economyConfig.ViolationPenalty, false);
           AudioHelper.PlaySFX(SFXType.MoneyLoss);
         }
         else

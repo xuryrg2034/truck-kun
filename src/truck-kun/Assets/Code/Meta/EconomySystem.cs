@@ -1,4 +1,4 @@
-using Code.Balance;
+using Code.Configs.Global;
 using Code.Infrastructure;
 using UnityEngine;
 using UnityEngine.UI;
@@ -6,35 +6,35 @@ using UnityEngine.UI;
 namespace Code.Meta.Economy
 {
   /// <summary>
-  /// Economy constants that can be overridden by GameBalance
+  /// Economy constants loaded from EconomyConfig
   /// </summary>
   public static class EconomyConstants
   {
-    // Default values (used if GameBalance not loaded)
+    // Default values (used if config not loaded)
     private const int DefaultDailyFoodCost = 100;
     private const int DefaultStartingMoney = 1000;
     private const int DefaultMinimumRequired = 100;
 
-    private static GameBalance _cachedBalance;
+    private static EconomyConfig _cachedConfig;
 
-    private static GameBalance Balance
+    private static EconomyConfig Config
     {
       get
       {
-        if (_cachedBalance == null)
-          _cachedBalance = Resources.Load<GameBalance>("Configs/GameBalance");
-        return _cachedBalance;
+        if (_cachedConfig == null)
+          _cachedConfig = Resources.Load<EconomyConfig>("Configs/EconomyConfig");
+        return _cachedConfig;
       }
     }
 
     public static int DailyFoodCost =>
-      Balance != null ? Balance.Economy.DailyFoodCost : DefaultDailyFoodCost;
+      Config != null ? Config.DailyFoodCost : DefaultDailyFoodCost;
 
     public static int StartingMoney =>
-      Balance != null ? Balance.Economy.StartingMoney : DefaultStartingMoney;
+      Config != null ? Config.StartingMoney : DefaultStartingMoney;
 
     public static int MinimumRequiredMoney =>
-      Balance != null ? Balance.Economy.MinimumRequiredMoney : DefaultMinimumRequired;
+      Config != null ? Config.MinimumRequiredMoney : DefaultMinimumRequired;
   }
 
   /// <summary>

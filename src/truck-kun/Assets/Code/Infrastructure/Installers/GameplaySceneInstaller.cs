@@ -1,5 +1,4 @@
 using Code.Art.VFX;
-using Code.Balance;
 using Code.Common.Extensions;
 using Code.Common.Services;
 using Code.Configs;
@@ -12,8 +11,8 @@ using Code.Gameplay.Features.Feedback;
 using Code.Gameplay.Features.Hero;
 using Code.Gameplay.Features.Input;
 using Code.Gameplay.Features.Pedestrian;
-using Code.Gameplay.Features.Quest;
 using Code.Gameplay.Features.Obstacle;
+using Code.Gameplay.Features.Quest;
 using Code.Gameplay.Features.Ragdoll;
 using Code.Gameplay.Features.Surface;
 using Code.Infrastructure.Systems;
@@ -37,29 +36,22 @@ namespace Code.Infrastructure.Installers
     [SerializeField] private Transform _heroSpawn;
     [SerializeField] private EntityBehaviour _heroViewPrefab;
 
-    [Header("New Config System (optional)")]
-    [Tooltip("New modular config system. If assigned, will be used alongside legacy GameBalance")]
+    [Header("Level Configuration (Required)")]
     [SerializeField] private LevelConfig _levelConfig;
-
-    [Header("Legacy Balance (will be deprecated)")]
-    [SerializeField] private GameBalance _gameBalance;
 
     [Header("Pedestrians")]
     [SerializeField] private PedestrianConfig _pedestrianConfig;
 
     public override void InstallBindings()
     {
-      // Validate and load GameBalance
-      if (_gameBalance == null)
-        _gameBalance = Resources.Load<GameBalance>("Configs/GameBalance");
-
-      if (_gameBalance == null)
+      // Validate required references
+      if (_levelConfig == null)
       {
-        Debug.LogError("[GameplaySceneInstaller] GameBalance not found!");
+        Debug.LogError("[GameplaySceneInstaller] LevelConfig is required! " +
+          "Create via: Create > Truck-kun > Level Config");
         return;
       }
 
-      // Validate required references
       if (_inputActions == null)
       {
         Debug.LogError("[GameplaySceneInstaller] InputActionAsset is missing!");
@@ -83,18 +75,14 @@ namespace Code.Infrastructure.Installers
         return;
       }
 
-      // Balance Provider (legacy)
-      IBalanceProvider balanceProvider = new BalanceProvider(_gameBalance);
-      Container.BindInstance(balanceProvider).AsSingle();
-      Container.BindInstance(_gameBalance).AsSingle();
+      // Validate LevelConfig has required sub-configs
+      ValidateLevelConfig();
 
-      // New Config System (bind if assigned)
+      // Bind all configs from LevelConfig
       BindLevelConfig();
 
-      // Difficulty Service
-      DifficultyScalingSettings difficultySettings = _gameBalance.Difficulty.ToSettings();
-      IDifficultyService difficultyService = new DifficultyScalingService(difficultySettings, balanceProvider);
-      Container.BindInstance(difficultyService).AsSingle();
+      // Bind runtime settings
+      BindRuntimeSettings();
 
       // Contexts
       Contexts contexts = Contexts.sharedInstance;
@@ -111,9 +99,6 @@ namespace Code.Infrastructure.Installers
       Container.Bind<IIdentifierService>().To<IdentifierService>().AsSingle();
       Container.Bind<ITimeService>().To<UnityTimeService>().AsSingle();
 
-      // Create settings from balance (will be modified by EcsBootstrap for difficulty/upgrades)
-      BindSettingsFromBalance(balanceProvider.Balance);
-
       // Pedestrian Config
       Container.BindInstance(_pedestrianConfig).AsSingle();
 
@@ -126,6 +111,11 @@ namespace Code.Infrastructure.Installers
       Vector3 spawnPos = _heroSpawn != null ? _heroSpawn.position : Vector3.zero;
       Container.Bind<IHeroSpawnPoint>().To<HeroSpawnPoint>().AsSingle()
         .WithArguments(spawnPos, _heroViewPrefab);
+
+      // Difficulty Service
+      var difficultySettings = new DifficultyScalingSettings();
+      IDifficultyService difficultyService = new DifficultyScalingService(difficultySettings);
+      Container.BindInstance(difficultyService).AsSingle();
 
       // Gameplay Services
       Container.Bind<IDaySessionService>().To<DaySessionService>().AsSingle();
@@ -153,20 +143,75 @@ namespace Code.Infrastructure.Installers
       // System Factory
       Container.Bind<ISystemFactory>().To<SystemFactory>().AsSingle();
 
-      Debug.Log("[GameplaySceneInstaller] Gameplay services bound");
+      Debug.Log($"[GameplaySceneInstaller] Level '{_levelConfig.LevelId}' services bound");
     }
 
-    private void BindSettingsFromBalance(GameBalance balance)
+    private void ValidateLevelConfig()
     {
-      // Movement
+      if (_levelConfig.Economy == null)
+        Debug.LogWarning("[GameplaySceneInstaller] LevelConfig.Economy is null!");
+
+      if (_levelConfig.Feedback == null)
+        Debug.LogWarning("[GameplaySceneInstaller] LevelConfig.Feedback is null!");
+
+      if (_levelConfig.Day == null)
+        Debug.LogWarning("[GameplaySceneInstaller] LevelConfig.Day is null!");
+
+      if (_levelConfig.PedestrianSpawn == null)
+        Debug.LogWarning("[GameplaySceneInstaller] LevelConfig.PedestrianSpawn is null!");
+
+      if (_levelConfig.QuestPool == null)
+        Debug.LogWarning("[GameplaySceneInstaller] LevelConfig.QuestPool is null!");
+    }
+
+    /// <summary>
+    /// Bind all configs from LevelConfig
+    /// </summary>
+    private void BindLevelConfig()
+    {
+      // Bind the main LevelConfig
+      Container.BindInstance(_levelConfig).AsSingle();
+
+      // Bind required global configs
+      if (_levelConfig.Economy != null)
+        Container.BindInstance(_levelConfig.Economy).AsSingle();
+
+      if (_levelConfig.Feedback != null)
+        Container.BindInstance(_levelConfig.Feedback).AsSingle();
+
+      // Bind required level-specific configs
+      if (_levelConfig.Day != null)
+        Container.BindInstance(_levelConfig.Day).AsSingle();
+
+      if (_levelConfig.PedestrianSpawn != null)
+        Container.BindInstance(_levelConfig.PedestrianSpawn).AsSingle();
+
+      if (_levelConfig.QuestPool != null)
+        Container.BindInstance(_levelConfig.QuestPool).AsSingle();
+
+      // Bind optional spawner configs
+      if (_levelConfig.SurfaceSpawn != null)
+        Container.BindInstance(_levelConfig.SurfaceSpawn).AsSingle();
+
+      if (_levelConfig.ObstacleSpawn != null)
+        Container.BindInstance(_levelConfig.ObstacleSpawn).AsSingle();
+    }
+
+    /// <summary>
+    /// Bind runtime settings that haven't been migrated to configs yet.
+    /// These are hardcoded defaults for now.
+    /// </summary>
+    private void BindRuntimeSettings()
+    {
+      // Movement settings (TODO: move to HeroSettings on prefab)
       var movement = new RunnerMovementSettings
       {
-        ForwardSpeed = balance.Movement.ForwardSpeed,
-        LateralSpeed = balance.Movement.LateralSpeed,
-        RoadWidth = balance.Movement.RoadWidth,
-        MinForwardSpeed = balance.Movement.ForwardSpeed * 0.6f,
-        MaxForwardSpeed = balance.Movement.ForwardSpeed * 1.6f,
-        MaxLateralSpeed = balance.Movement.LateralSpeed,
+        ForwardSpeed = 15f,
+        LateralSpeed = 8f,
+        RoadWidth = 8f,
+        MinForwardSpeed = 9f,
+        MaxForwardSpeed = 24f,
+        MaxLateralSpeed = 8f,
         ForwardAcceleration = 10f,
         LateralAcceleration = 15f,
         Deceleration = 8f,
@@ -177,14 +222,13 @@ namespace Code.Infrastructure.Installers
       };
       Container.BindInstance(movement).AsSingle();
 
-      // Collision
+      // Collision settings
       var collision = new CollisionSettings
       {
-        HitRadius = balance.Movement.HitRadius,
+        HitRadius = 1.5f,
         UsePhysicsCollision = true,
         MinImpactForce = 0.5f,
         StrongImpactForce = 5f,
-        // Knockback settings
         ForceMultiplier = 15f,
         MinSpeedForLift = 5f,
         MaxLiftSpeed = 20f,
@@ -192,7 +236,7 @@ namespace Code.Infrastructure.Installers
       };
       Container.BindInstance(collision).AsSingle();
 
-      // Pedestrian Physics
+      // Pedestrian Physics settings
       var pedestrianPhysics = new PedestrianPhysicsSettings
       {
         MoveForce = 50f,
@@ -207,61 +251,14 @@ namespace Code.Infrastructure.Installers
       };
       Container.BindInstance(pedestrianPhysics).AsSingle();
 
-      // Pedestrians
-      var pedestrians = new PedestrianSpawnSettings
-      {
-        SpawnInterval = balance.Pedestrians.SpawnInterval,
-        SpawnDistanceAhead = balance.Pedestrians.SpawnDistanceAhead,
-        DespawnDistanceBehind = balance.Pedestrians.DespawnDistanceBehind,
-        MaxActive = balance.Pedestrians.MaxActive,
-        LateralMargin = balance.Pedestrians.LateralMargin,
-        CrossingChance = balance.Pedestrians.CrossingChance,
-        CrossingSpeedMultiplier = balance.Pedestrians.CrossingSpeedMultiplier,
-        SidewalkOffset = balance.Pedestrians.SidewalkOffset
-      };
-      Container.BindInstance(pedestrians).AsSingle();
-
-      // Day Session
+      // Day Session settings (from DayConfig)
       var daySession = new DaySessionSettings
       {
-        DurationSeconds = balance.Day.DurationSeconds
+        DurationSeconds = _levelConfig.Day?.DurationSeconds ?? 120f
       };
       Container.BindInstance(daySession).AsSingle();
 
-      // Quest
-      var quest = new QuestSettings
-      {
-        MinQuestsPerDay = balance.Day.MinQuestsPerDay,
-        MaxQuestsPerDay = balance.Day.MaxQuestsPerDay
-      };
-      Container.BindInstance(quest).AsSingle();
-
-      // Economy
-      var economy = new EconomySettings
-      {
-        StartingMoney = balance.Economy.StartingMoney,
-        ViolationPenalty = balance.Economy.ViolationPenalty,
-        BaseQuestReward = balance.Economy.BaseQuestReward
-      };
-      Container.BindInstance(economy).AsSingle();
-
-      // Feedback
-      var feedback = new FeedbackSettings
-      {
-        ParticleBurstCount = balance.Feedback.ParticleBurstCount,
-        ParticleLifetime = balance.Feedback.ParticleLifetime,
-        ParticleSpeed = balance.Feedback.ParticleSpeed,
-        ParticleGravity = balance.Feedback.ParticleGravity,
-        ParticleSize = balance.Feedback.ParticleSize,
-        FloatSpeed = balance.Feedback.FloatSpeed,
-        FloatDuration = balance.Feedback.FloatDuration,
-        FontSize = balance.Feedback.FontSize,
-        RewardColor = balance.Feedback.RewardColor,
-        PenaltyColor = balance.Feedback.PenaltyColor
-      };
-      Container.BindInstance(feedback).AsSingle();
-
-      // Surface
+      // Surface spawn settings
       var surface = new SurfaceSpawnSettings
       {
         EnableSpawning = false,
@@ -282,14 +279,14 @@ namespace Code.Infrastructure.Installers
       };
       Container.BindInstance(surface).AsSingle();
 
-      // Ragdoll
+      // Ragdoll settings
       var ragdoll = new RagdollSettings
       {
-        HitForce = 800f,           // Legacy, kept for compatibility
-        UpwardForce = 300f,        // Legacy
-        TorqueForce = 200f,        // Legacy
-        DespawnAfterHitDelay = 3f, // Time before fade starts
-        FadeDuration = 0.5f,       // Fade animation duration
+        HitForce = 800f,
+        UpwardForce = 300f,
+        TorqueForce = 200f,
+        DespawnAfterHitDelay = 3f,
+        FadeDuration = 0.5f,
         MaxActiveRagdolls = 5,
         RagdollDrag = 0.5f,
         RagdollAngularDrag = 0.5f,
@@ -297,7 +294,7 @@ namespace Code.Infrastructure.Installers
       };
       Container.BindInstance(ragdoll).AsSingle();
 
-      // Obstacle
+      // Obstacle settings
       var obstacle = new ObstacleSettings
       {
         RampAngle = 15f,
@@ -310,50 +307,6 @@ namespace Code.Infrastructure.Installers
         HolePenaltyDuration = 1f
       };
       Container.BindInstance(obstacle).AsSingle();
-    }
-
-    /// <summary>
-    /// Bind new modular config system.
-    /// These configs can be used by new/migrated systems.
-    /// </summary>
-    private void BindLevelConfig()
-    {
-      if (_levelConfig == null)
-      {
-        Debug.Log("[GameplaySceneInstaller] LevelConfig not assigned, using legacy GameBalance only");
-        return;
-      }
-
-      Debug.Log($"[GameplaySceneInstaller] Binding LevelConfig: {_levelConfig.LevelId}");
-
-      // Bind the main LevelConfig
-      Container.BindInstance(_levelConfig).AsSingle();
-
-      // Bind global configs
-      if (_levelConfig.Economy != null)
-        Container.BindInstance(_levelConfig.Economy).AsSingle();
-
-      if (_levelConfig.Feedback != null)
-        Container.BindInstance(_levelConfig.Feedback).AsSingle();
-
-      // Bind level-specific configs
-      if (_levelConfig.Day != null)
-        Container.BindInstance(_levelConfig.Day).AsSingle();
-
-      if (_levelConfig.PedestrianSpawn != null)
-        Container.BindInstance(_levelConfig.PedestrianSpawn).AsSingle();
-
-      if (_levelConfig.QuestPool != null)
-        Container.BindInstance(_levelConfig.QuestPool).AsSingle();
-
-      // Bind optional spawner configs
-      if (_levelConfig.SurfaceSpawn != null)
-        Container.BindInstance(_levelConfig.SurfaceSpawn).AsSingle();
-
-      if (_levelConfig.ObstacleSpawn != null)
-        Container.BindInstance(_levelConfig.ObstacleSpawn).AsSingle();
-
-      Debug.Log("[GameplaySceneInstaller] New config system bound successfully");
     }
   }
 }

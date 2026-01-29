@@ -7,10 +7,6 @@ using Code.Infrastructure.Systems;
 using Entitas;
 using Entitas.CodeGeneration.Attributes;
 using UnityEngine;
-using Zenject;
-
-// Note: QuestPoolConfig in Code.Configs.Spawning is the new config
-// QuestConfig here is legacy and kept for backward compatibility
 
 namespace Code.Gameplay.Features.Quest
 {
@@ -65,64 +61,6 @@ namespace Code.Gameplay.Features.Quest
     }
   }
 
-  [Serializable]
-  public class QuestDefinition
-  {
-    public PedestrianKind TargetType;
-    public int MinCount = 1;
-    public int MaxCount = 5;
-    public int BaseReward = 100;
-
-    public string GetDescription()
-    {
-      return TargetType.GetDisplayNameRu();
-    }
-  }
-
-  [Serializable]
-  public class QuestSettings
-  {
-    public int MinQuestsPerDay = 1;
-    public int MaxQuestsPerDay = 1;
-  }
-
-  #endregion
-
-  #region ScriptableObject
-
-  [CreateAssetMenu(fileName = "QuestConfig", menuName = "Truck-kun/Quest Config")]
-  public class QuestConfig : ScriptableObject
-  {
-    [SerializeField] private List<QuestDefinition> _availableQuests = new()
-    {
-      new QuestDefinition { TargetType = PedestrianKind.StudentNerd, MinCount = 3, MaxCount = 5, BaseReward = 100 },
-      new QuestDefinition { TargetType = PedestrianKind.Salaryman, MinCount = 2, MaxCount = 4, BaseReward = 120 },
-      new QuestDefinition { TargetType = PedestrianKind.Teenager, MinCount = 3, MaxCount = 6, BaseReward = 80 }
-    };
-    [SerializeField] private int _rewardPerTarget = 10;
-
-    public IReadOnlyList<QuestDefinition> AvailableQuests => _availableQuests;
-    public int RewardPerTarget => _rewardPerTarget;
-
-    public QuestDefinition GetRandomQuest()
-    {
-      if (_availableQuests.Count == 0)
-        return null;
-
-      return _availableQuests[UnityEngine.Random.Range(0, _availableQuests.Count)];
-    }
-
-    public QuestDefinition GetQuestForType(PedestrianKind kind)
-    {
-      foreach (QuestDefinition quest in _availableQuests)
-      {
-        if (quest.TargetType == kind)
-          return quest;
-      }
-      return null;
-    }
-  }
-
   #endregion
 
   #region Service
@@ -141,8 +79,7 @@ namespace Code.Gameplay.Features.Quest
   public class QuestService : IQuestService
   {
     private readonly MetaContext _meta;
-    private readonly QuestConfig _legacyConfig;
-    private readonly QuestPoolConfig _newConfig;
+    private readonly QuestPoolConfig _config;
     private readonly IIdentifierService _identifiers;
     private readonly IGroup<MetaEntity> _activeQuests;
     private readonly List<MetaEntity> _questBuffer = new(8);
@@ -150,17 +87,13 @@ namespace Code.Gameplay.Features.Quest
     public QuestService(
       MetaContext meta,
       IIdentifierService identifiers,
-      [InjectOptional] QuestConfig legacyConfig = null,
-      [InjectOptional] QuestPoolConfig newConfig = null)
+      QuestPoolConfig config)
     {
       _meta = meta;
-      _legacyConfig = legacyConfig;
-      _newConfig = newConfig;
+      _config = config ?? throw new ArgumentNullException(nameof(config),
+        "QuestPoolConfig is required! Assign it in LevelConfig.");
       _identifiers = identifiers;
       _activeQuests = meta.GetGroup(MetaMatcher.AllOf(MetaMatcher.DailyQuest, MetaMatcher.ActiveQuest));
-
-      if (_newConfig != null)
-        Debug.Log("[QuestService] Using new QuestPoolConfig");
     }
 
     public bool HasActiveQuests => _activeQuests.count > 0;
@@ -186,56 +119,15 @@ namespace Code.Gameplay.Features.Quest
     {
       ClearExistingQuests();
 
-      // Available non-protected types for quests (default fallback)
-      PedestrianKind[] availableTypes = {
-        PedestrianKind.StudentNerd,
-        PedestrianKind.Salaryman,
-        PedestrianKind.Teenager
-      };
-
-      // Use new config if available
-      if (_newConfig != null && _newConfig.AvailableQuests.Count > 0)
+      List<QuestDefinition> generatedQuests = _config.GenerateQuestsForDay();
+      foreach (var def in generatedQuests)
       {
-        List<Configs.Spawning.QuestDefinition> generatedQuests = _newConfig.GenerateQuestsForDay();
-        foreach (var def in generatedQuests)
-        {
-          int targetCount = def.GetRandomTarget();
-          int reward = def.CalculateReward(targetCount, targetCount);
-
-          MetaEntity quest = _meta.CreateEntity();
-          quest.AddId(_identifiers.Next());
-          quest.AddDailyQuest(def.TargetKind, targetCount, reward);
-          quest.AddQuestProgress(0);
-          quest.isActiveQuest = true;
-        }
-        return;
-      }
-
-      // Legacy config or default behavior
-      for (int i = 0; i < count; i++)
-      {
-        PedestrianKind targetType;
-        int targetCount;
-        int reward;
-
-        if (_legacyConfig != null && _legacyConfig.AvailableQuests.Count > 0)
-        {
-          QuestDefinition definition = _legacyConfig.GetRandomQuest();
-          targetType = definition.TargetType;
-          targetCount = UnityEngine.Random.Range(definition.MinCount, definition.MaxCount + 1);
-          reward = definition.BaseReward + targetCount * _legacyConfig.RewardPerTarget;
-        }
-        else
-        {
-          // Default: pick random non-protected type
-          targetType = availableTypes[UnityEngine.Random.Range(0, availableTypes.Length)];
-          targetCount = UnityEngine.Random.Range(3, 6);
-          reward = 100 + targetCount * 10;
-        }
+        int targetCount = def.GetRandomTarget();
+        int reward = def.CalculateReward(targetCount, targetCount);
 
         MetaEntity quest = _meta.CreateEntity();
         quest.AddId(_identifiers.Next());
-        quest.AddDailyQuest(targetType, targetCount, reward);
+        quest.AddDailyQuest(def.TargetKind, targetCount, reward);
         quest.AddQuestProgress(0);
         quest.isActiveQuest = true;
       }
@@ -325,17 +217,18 @@ namespace Code.Gameplay.Features.Quest
   public class QuestInitializationSystem : IInitializeSystem
   {
     private readonly IQuestService _questService;
-    private readonly QuestSettings _settings;
+    private readonly QuestPoolConfig _config;
 
-    public QuestInitializationSystem(IQuestService questService, [InjectOptional] QuestSettings settings = null)
+    public QuestInitializationSystem(IQuestService questService, QuestPoolConfig config)
     {
       _questService = questService;
-      _settings = settings ?? new QuestSettings();
+      _config = config ?? throw new ArgumentNullException(nameof(config),
+        "QuestPoolConfig is required! Assign it in LevelConfig.");
     }
 
     public void Initialize()
     {
-      int questCount = UnityEngine.Random.Range(_settings.MinQuestsPerDay, _settings.MaxQuestsPerDay + 1);
+      int questCount = UnityEngine.Random.Range(_config.MinQuestsPerDay, _config.MaxQuestsPerDay + 1);
       _questService.GenerateDailyQuests(questCount);
     }
   }

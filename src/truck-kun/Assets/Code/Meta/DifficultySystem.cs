@@ -1,5 +1,4 @@
 using System;
-using Code.Balance;
 using Code.Infrastructure;
 using UnityEngine;
 using UnityEngine.UI;
@@ -76,17 +75,13 @@ namespace Code.Meta.Difficulty
   public class DifficultyScalingService : IDifficultyService
   {
     private readonly DifficultyScalingSettings _settings;
-    private readonly IBalanceProvider _balanceProvider;
     private DifficultyConfig _currentDifficulty;
 
     public DifficultyConfig CurrentDifficulty => _currentDifficulty;
 
-    public DifficultyScalingService(
-      DifficultyScalingSettings settings = null,
-      IBalanceProvider balanceProvider = null)
+    public DifficultyScalingService(DifficultyScalingSettings settings = null)
     {
       _settings = settings ?? new DifficultyScalingSettings();
-      _balanceProvider = balanceProvider;
     }
 
     public DifficultyConfig GetDifficultyForDay(int dayNumber)

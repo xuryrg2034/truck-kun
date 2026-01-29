@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Code.Gameplay.Features.Pedestrian;
 using UnityEngine;
 
 namespace Code.Configs.Spawning
@@ -10,10 +11,24 @@ namespace Code.Configs.Spawning
         public float MinSpawnInterval = 1f;
         public float MaxSpawnInterval = 3f;
 
+        [Header("Spawn Limits")]
+        [Tooltip("Maximum active pedestrians at once")]
+        public int MaxActive = 12;
+
+        [Header("Allowed Types")]
+        [Tooltip("Which pedestrian types can spawn. Empty = all types.")]
+        public List<PedestrianKind> AllowedKinds = new();
+
         [Header("Behavior")]
         [Range(0f, 1f)]
         [Tooltip("Chance that pedestrian will cross the road")]
         public float CrossingChance = 0.7f;
+
+        [Tooltip("Speed multiplier for crossing pedestrians")]
+        public float CrossingSpeedMultiplier = 1f;
+
+        [Tooltip("Rotate pedestrian to face crossing direction")]
+        public bool RotateToCrossingDirection = true;
 
         [Tooltip("Distance behind player when pedestrian despawns")]
         public float DespawnDistance = 25f;
@@ -24,6 +39,12 @@ namespace Code.Configs.Spawning
 
         [Tooltip("Total road width for spawning")]
         public float RoadWidth = 8f;
+
+        [Tooltip("Extra offset from road edge for spawning on sidewalk")]
+        public float SidewalkOffset = 1.5f;
+
+        [Tooltip("Margin from road edges for regular spawning")]
+        public float LateralMargin = 0.5f;
 
         [Header("Spawn Pool")]
         public List<PedestrianSpawnEntry> SpawnPool = new();

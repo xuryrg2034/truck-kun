@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2123903389c0cd24487eabc5945189b6, type: 3}
+  m_Name: Level_Day1
+  m_EditorClassIdentifier: Assembly-CSharp::Code.Configs.LevelConfig
+  LevelId: day_1
+  LevelName: Level_1
+  Economy: {fileID: 11400000, guid: 6e3f90e2af7b74b42a32e632b7b02fcd, type: 2}
+  Feedback: {fileID: 11400000, guid: 6cc9c0dd12a3a094ea978fc065a3fc28, type: 2}
+  Day: {fileID: 11400000, guid: 07e2c739105daf24aa075f28a465cd78, type: 2}
+  PedestrianSpawn: {fileID: 11400000, guid: 1632697436d445948b0ec11976497f9c, type: 2}
+  QuestPool: {fileID: 11400000, guid: a4d1bbed549f5044288c4953ee46fd66, type: 2}
+  SurfaceSpawn: {fileID: 0}
+  ObstacleSpawn: {fileID: 0}

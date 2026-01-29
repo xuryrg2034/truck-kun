@@ -14,8 +14,11 @@ namespace Code.Configs.Global
         public int ViolationPenalty = 100;
 
         [Header("Daily Costs")]
-        [Tooltip("Cost deducted at end of each day")]
-        public int DailyCost = 200;
+        [Tooltip("Cost for food deducted at end of each day")]
+        public int DailyFoodCost = 100;
+
+        [Tooltip("Minimum money required to continue (game over if below)")]
+        public int MinimumRequiredMoney = 100;
 
         [Header("Combo System")]
         [Tooltip("Multiplier increase per consecutive hit")]

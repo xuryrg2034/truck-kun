@@ -19,6 +19,8 @@ namespace Code.Configs.Global
         public int ParticleBurstCount = 15;
         public float ParticleLifetime = 1f;
         public float ParticleSpeed = 5f;
+        public float ParticleSize = 0.15f;
+        public float ParticleGravity = 2f;
 
         [Header("Camera Shake")]
         public float ShakeIntensity = 0.3f;

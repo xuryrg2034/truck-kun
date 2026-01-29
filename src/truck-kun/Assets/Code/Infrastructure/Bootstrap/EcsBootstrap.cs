@@ -1,11 +1,11 @@
 using Code.Audio;
-using Code.Balance;
+using Code.Configs.Global;
+using Code.Configs.Spawning;
 using Code.Gameplay;
 using Code.Gameplay.Features.Economy;
 using Code.Gameplay.Features.Hero;
-using Code.Gameplay.Features.Pedestrian;
-using Code.Gameplay.Features.Quest;
 using Code.Gameplay.Features.Input;
+using Code.Gameplay.Features.Quest;
 using Code.Infrastructure.Systems;
 using Code.Infrastructure.View;
 using Code.Meta.Difficulty;
@@ -26,7 +26,6 @@ namespace Code.Infrastructure.Bootstrap
   {
     // Injected dependencies
     [Inject] private Contexts _contexts;
-    [Inject] private IBalanceProvider _balanceProvider;
     [Inject] private IDifficultyService _difficultyService;
     [Inject] private IInputService _inputService;
     [Inject] private IDaySessionService _daySessionService;
@@ -35,11 +34,13 @@ namespace Code.Infrastructure.Bootstrap
     [Inject] private IUpgradeService _upgradeService;
     [Inject] private ISystemFactory _systemFactory;
 
+    // Injected configs
+    [Inject] private EconomyConfig _economyConfig;
+    [Inject] private PedestrianSpawnConfig _pedestrianSpawnConfig;
+    [Inject] private QuestPoolConfig _questPoolConfig;
+
     // Injected settings (modified in-place for difficulty/upgrades)
     [Inject] private RunnerMovementSettings _runnerMovement;
-    [Inject] private PedestrianSpawnSettings _pedestrianSpawnSettings;
-    [Inject] private QuestSettings _questSettings;
-    [Inject] private EconomySettings _economySettings;
 
     // Runtime state
     private BattleFeature _battleFeature;
@@ -97,17 +98,11 @@ namespace Code.Infrastructure.Bootstrap
       _difficultyService.ApplyDifficulty(dayNumber);
       DifficultyConfig difficulty = _difficultyService.CurrentDifficulty;
 
-      // Apply to pedestrian settings
-      _pedestrianSpawnSettings.SpawnInterval = difficulty.PedestrianSpawnInterval;
-      _pedestrianSpawnSettings.MaxActive = difficulty.MaxPedestrians;
-      _pedestrianSpawnSettings.CrossingChance = difficulty.CrossingChance;
-
-      // Apply to movement
+      // Apply to movement (difficulty affects base speed)
       _runnerMovement.ForwardSpeed *= difficulty.ForwardSpeedMultiplier;
 
-      // Apply to quests
-      _questSettings.MinQuestsPerDay = difficulty.QuestCount;
-      _questSettings.MaxQuestsPerDay = difficulty.QuestCount;
+      // Note: PedestrianSpawnConfig and QuestPoolConfig are ScriptableObjects
+      // Difficulty scaling is applied at runtime through DifficultyService
     }
 
     private void ApplyUpgradesToSettings()
@@ -137,9 +132,6 @@ namespace Code.Infrastructure.Bootstrap
         _runnerMovement.Deceleration *= (1f + lateralBonus * 0.3f);
         Debug.Log($"[Upgrades] Maneuverability applied: +{lateralBonus * 100:F0}% lateral control");
       }
-
-      // Set starting money from state
-      _economySettings.StartingMoney = state.PlayerMoney;
     }
 
     private float GetUpgradeBonus(UpgradeType type, int level)
@@ -147,8 +139,8 @@ namespace Code.Infrastructure.Bootstrap
       if (level <= 0)
         return 0f;
 
-      UpgradeDefinitionBalance upgrade = _balanceProvider.Balance.GetUpgrade(type);
-      return upgrade?.GetBonus(level) ?? 0f;
+      // Simple formula: 10% bonus per level
+      return level * 0.1f;
     }
 
     private void Update()
