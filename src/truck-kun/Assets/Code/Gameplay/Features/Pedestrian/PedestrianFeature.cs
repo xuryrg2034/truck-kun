@@ -446,7 +446,6 @@ namespace Code.Gameplay.Features.Pedestrian
     private readonly GameContext _game;
     private readonly ITimeService _time;
     private readonly PedestrianSpawnConfig _config;
-    private readonly IHeroSpawnPoint _spawnPoint;
     private readonly IIdentifierService _identifiers;
     private readonly IPedestrianFactory _factory;
     private readonly IGroup<GameEntity> _heroes;
@@ -458,7 +457,6 @@ namespace Code.Gameplay.Features.Pedestrian
       GameContext game,
       ITimeService time,
       PedestrianSpawnConfig config,
-      IHeroSpawnPoint spawnPoint,
       IIdentifierService identifiers,
       IPedestrianFactory factory)
     {
@@ -466,7 +464,6 @@ namespace Code.Gameplay.Features.Pedestrian
       _time = time;
       _config = config ?? throw new ArgumentNullException(nameof(config),
         "PedestrianSpawnConfig is required! Assign it in LevelConfig.");
-      _spawnPoint = spawnPoint;
       _identifiers = identifiers;
       _factory = factory;
       _heroes = game.GetGroup(GameMatcher.AllOf(GameMatcher.Hero, GameMatcher.WorldPosition));
@@ -520,7 +517,8 @@ namespace Code.Gameplay.Features.Pedestrian
       entity.AddPedestrianType(kind);
       entity.AddId(_identifiers.Next());
 
-      float centerX = _spawnPoint != null ? _spawnPoint.Position.x : 0f;
+      // Road center is at X=0 (physical road boundaries handle limits)
+      float centerX = 0f;
       float halfRoadWidth = _config.RoadWidth * 0.5f;
 
       Vector3 position = heroPosition;

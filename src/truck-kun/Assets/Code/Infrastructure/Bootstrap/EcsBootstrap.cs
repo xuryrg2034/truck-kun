@@ -1,4 +1,5 @@
 using Code.Audio;
+using Code.Configs;
 using Code.Configs.Global;
 using Code.Configs.Spawning;
 using Code.Gameplay;
@@ -7,7 +8,6 @@ using Code.Gameplay.Features.Hero;
 using Code.Gameplay.Features.Input;
 using Code.Gameplay.Features.Quest;
 using Code.Infrastructure.Systems;
-using Code.Infrastructure.View;
 using Code.Meta.Difficulty;
 using Code.Meta.Upgrades;
 using Code.UI.EndDayScreen;
@@ -33,14 +33,16 @@ namespace Code.Infrastructure.Bootstrap
     [Inject] private IQuestService _questService;
     [Inject] private IUpgradeService _upgradeService;
     [Inject] private ISystemFactory _systemFactory;
+    [Inject] private IHeroFactory _heroFactory;
 
     // Injected configs
+    [Inject] private VehicleConfig _vehicleConfig;
     [Inject] private EconomyConfig _economyConfig;
     [Inject] private PedestrianSpawnConfig _pedestrianSpawnConfig;
     [Inject] private QuestPoolConfig _questPoolConfig;
 
-    // Injected settings (modified in-place for difficulty/upgrades)
-    [Inject] private RunnerMovementSettings _runnerMovement;
+    // Injected spawn position
+    [Inject(Id = "HeroSpawnPosition")] private Vector3 _heroSpawnPosition;
 
     // Runtime state
     private BattleFeature _battleFeature;
@@ -57,19 +59,36 @@ namespace Code.Infrastructure.Bootstrap
       GameStateService gameState = GameStateService.Instance;
       int currentDay = gameState.DayNumber;
 
-      // Apply difficulty scaling to settings
-      ApplyDifficultyScaling(currentDay);
-
-      // Apply upgrades from persistent state
-      ApplyUpgradesToSettings();
-
-      // Initialize upgrade service
+      // Initialize upgrade service first (loads levels from persistent storage)
       _upgradeService.Initialize();
+
+      // Apply difficulty scaling
+      _difficultyService.ApplyDifficulty(currentDay);
+      DifficultyConfig difficulty = _difficultyService.CurrentDifficulty;
+
+      // Get upgrade multipliers from service
+      float speedMultiplier = _upgradeService.GetSpeedMultiplier();
+      float lateralMultiplier = _upgradeService.GetLateralMultiplier();
+      float difficultyMultiplier = difficulty.ForwardSpeedMultiplier;
+
+      // Create immutable vehicle stats with all multipliers applied
+      VehicleStats vehicleStats = VehicleStats.Create(
+        _vehicleConfig,
+        speedMultiplier,
+        lateralMultiplier,
+        difficultyMultiplier
+      );
+
+      Debug.Log($"[EcsBootstrap] VehicleStats created: {vehicleStats}");
+      Debug.Log($"[EcsBootstrap] Multipliers: speed={speedMultiplier:F2}, lateral={lateralMultiplier:F2}, difficulty={difficultyMultiplier:F2}");
 
       // Create and initialize ECS systems
       _battleFeature = _systemFactory.Create<BattleFeature>();
       _battleFeature.Initialize();
       Debug.Log("[EcsBootstrap] BattleFeature initialized (Physics runs in FixedUpdate)");
+
+      // Create hero entity
+      _heroFactory.CreateHero(vehicleStats, _heroSpawnPosition);
 
       // Initialize UI
       InitializeQuestUI();
@@ -88,59 +107,8 @@ namespace Code.Infrastructure.Bootstrap
       if (_daySessionService.State == DayState.Finished)
         HandleDayFinished();
 
-      DifficultyConfig difficulty = _difficultyService.CurrentDifficulty;
       Debug.Log($"[EcsBootstrap] Day {currentDay} started. Balance: {gameState.PlayerMoney}¥. " +
                 $"Difficulty: Quests={difficulty.QuestCount}, SpawnInterval={difficulty.PedestrianSpawnInterval:F2}");
-    }
-
-    private void ApplyDifficultyScaling(int dayNumber)
-    {
-      _difficultyService.ApplyDifficulty(dayNumber);
-      DifficultyConfig difficulty = _difficultyService.CurrentDifficulty;
-
-      // Apply to movement (difficulty affects base speed)
-      _runnerMovement.ForwardSpeed *= difficulty.ForwardSpeedMultiplier;
-
-      // Note: PedestrianSpawnConfig and QuestPoolConfig are ScriptableObjects
-      // Difficulty scaling is applied at runtime through DifficultyService
-    }
-
-    private void ApplyUpgradesToSettings()
-    {
-      GameStateService state = GameStateService.Instance;
-
-      // Apply speed upgrade
-      float speedBonus = GetUpgradeBonus(UpgradeType.SpeedBoost, state.GetUpgradeLevel(UpgradeType.SpeedBoost));
-      if (speedBonus > 0)
-      {
-        float multiplier = 1f + speedBonus;
-        _runnerMovement.ForwardSpeed *= multiplier;
-        _runnerMovement.MinForwardSpeed *= multiplier;
-        _runnerMovement.MaxForwardSpeed *= multiplier;
-        _runnerMovement.ForwardAcceleration *= (1f + speedBonus * 0.5f);
-        Debug.Log($"[Upgrades] SpeedBoost applied: +{speedBonus * 100:F0}% speed");
-      }
-
-      // Apply maneuverability upgrade
-      float lateralBonus = GetUpgradeBonus(UpgradeType.Maneuverability, state.GetUpgradeLevel(UpgradeType.Maneuverability));
-      if (lateralBonus > 0)
-      {
-        float multiplier = 1f + lateralBonus;
-        _runnerMovement.LateralSpeed *= multiplier;
-        _runnerMovement.MaxLateralSpeed *= multiplier;
-        _runnerMovement.LateralAcceleration *= multiplier;
-        _runnerMovement.Deceleration *= (1f + lateralBonus * 0.3f);
-        Debug.Log($"[Upgrades] Maneuverability applied: +{lateralBonus * 100:F0}% lateral control");
-      }
-    }
-
-    private float GetUpgradeBonus(UpgradeType type, int level)
-    {
-      if (level <= 0)
-        return 0f;
-
-      // Simple formula: 10% bonus per level
-      return level * 0.1f;
     }
 
     private void Update()

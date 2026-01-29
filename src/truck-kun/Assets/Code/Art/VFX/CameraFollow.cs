@@ -31,7 +31,7 @@ namespace Code.Art.VFX
       if (_target != null)
         return true;
 
-      foreach (EntityBehaviour view in FindObjectsOfType<EntityBehaviour>())
+      foreach (EntityBehaviour view in FindObjectsByType<EntityBehaviour>(FindObjectsSortMode.None))
       {
         if (view.Entity != null && view.Entity.isHero)
         {

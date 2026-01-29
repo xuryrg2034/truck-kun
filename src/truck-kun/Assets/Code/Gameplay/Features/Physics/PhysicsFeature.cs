@@ -172,25 +172,23 @@ namespace Code.Gameplay.Features.Physics
   /// Lateral: Accelerates based on input, decelerates when no input
   ///
   /// Uses smooth acceleration for natural feel.
+  /// Speed values come from entity's ECS components (MoveSpeed, PhysicsConstraints).
   /// </summary>
   public class CalculatePhysicsVelocitySystem : IExecuteSystem
   {
     private readonly ITimeService _time;
-    private readonly RunnerMovementSettings _settings;
     private readonly IGroup<GameEntity> _movers;
     private readonly List<GameEntity> _buffer = new(4);
 
-    public CalculatePhysicsVelocitySystem(
-      GameContext game,
-      ITimeService time,
-      RunnerMovementSettings settings)
+    public CalculatePhysicsVelocitySystem(GameContext game, ITimeService time)
     {
       _time = time;
-      _settings = settings;
       _movers = game.GetGroup(GameMatcher.AllOf(
         GameMatcher.Hero,
         GameMatcher.PhysicsBody,
         GameMatcher.PhysicsVelocity,
+        GameMatcher.PhysicsConstraints,
+        GameMatcher.MoveSpeed,
         GameMatcher.Acceleration,
         GameMatcher.MoveDirection));
     }
@@ -204,10 +202,11 @@ namespace Code.Gameplay.Features.Physics
         Vector3 currentVelocity = entity.physicsVelocity.Value;
         Vector3 moveDir = entity.moveDirection.Value;
         Acceleration accel = entity.acceleration;
+        PhysicsConstraints constraints = entity.physicsConstraints;
 
         // === FORWARD VELOCITY ===
-        // Target forward speed is constant (auto-runner)
-        float targetForwardSpeed = _settings.ForwardSpeed;
+        // Target forward speed from entity's MoveSpeed component (set from VehicleStats)
+        float targetForwardSpeed = entity.moveSpeed.Value;
 
         // Smoothly accelerate/decelerate to target forward speed
         float forwardVelocity;
@@ -230,7 +229,8 @@ namespace Code.Gameplay.Features.Physics
 
         // === LATERAL VELOCITY ===
         float lateralInput = moveDir.x;
-        float targetLateralSpeed = lateralInput * _settings.MaxLateralSpeed;
+        // MaxLateralSpeed from entity's PhysicsConstraints component
+        float targetLateralSpeed = lateralInput * constraints.MaxLateralSpeed;
         float lateralVelocity = currentVelocity.x;
 
         if (Mathf.Abs(lateralInput) > 0.01f)

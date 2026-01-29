@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Code.Gameplay.Features.Economy;
-using Code.Gameplay.Features.Hero;
 using Entitas;
 using Entitas.CodeGeneration.Attributes;
 using UnityEngine;
@@ -154,7 +153,8 @@ namespace Code.Meta.Upgrades
   {
     bool PurchaseUpgrade(UpgradeType type);
     int GetUpgradeLevel(UpgradeType type);
-    void ApplyUpgradesToSettings(RunnerMovementSettings settings);
+    float GetSpeedMultiplier();
+    float GetLateralMultiplier();
     float GetMoneyMultiplier();
     IReadOnlyList<UpgradeInfo> GetAllUpgrades();
     UpgradeInfo GetUpgradeInfo(UpgradeType type);
@@ -229,24 +229,16 @@ namespace Code.Meta.Upgrades
       return _levels.TryGetValue(type, out int level) ? level : 0;
     }
 
-    public void ApplyUpgradesToSettings(RunnerMovementSettings settings)
+    public float GetSpeedMultiplier()
     {
-      if (settings == null)
-        return;
+      float bonus = GetBonus(UpgradeType.SpeedBoost);
+      return 1f + bonus;
+    }
 
-      // Speed Boost
-      float speedBonus = GetBonus(UpgradeType.SpeedBoost);
-      if (speedBonus > 0)
-      {
-        settings.ForwardSpeed *= (1f + speedBonus);
-      }
-
-      // Maneuverability
-      float lateralBonus = GetBonus(UpgradeType.Maneuverability);
-      if (lateralBonus > 0)
-      {
-        settings.LateralSpeed *= (1f + lateralBonus);
-      }
+    public float GetLateralMultiplier()
+    {
+      float bonus = GetBonus(UpgradeType.Maneuverability);
+      return 1f + bonus;
     }
 
     public float GetMoneyMultiplier()
@@ -385,18 +377,14 @@ namespace Code.Meta.Upgrades
       return _gameState.GetUpgradeLevel(type);
     }
 
-    public void ApplyUpgradesToSettings(RunnerMovementSettings settings)
+    public float GetSpeedMultiplier()
     {
-      if (settings == null)
-        return;
+      return 1f + GetBonus(UpgradeType.SpeedBoost);
+    }
 
-      float speedBonus = GetBonus(UpgradeType.SpeedBoost);
-      if (speedBonus > 0)
-        settings.ForwardSpeed *= (1f + speedBonus);
-
-      float lateralBonus = GetBonus(UpgradeType.Maneuverability);
-      if (lateralBonus > 0)
-        settings.LateralSpeed *= (1f + lateralBonus);
+    public float GetLateralMultiplier()
+    {
+      return 1f + GetBonus(UpgradeType.Maneuverability);
     }
 
     public float GetMoneyMultiplier()

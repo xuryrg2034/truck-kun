@@ -19,6 +19,56 @@
 
 ---
 
+## 2026-01-29 - Очистка Editor скриптов
+
+**Файлы:**
+- `Assets/Code/Editor/PhysicsBalanceValidator.cs` - удалён
+- `Assets/Code/Editor/MeshSaver.cs` - удалён
+- `Assets/Code/Editor/SceneCreator.cs` - удалён
+
+**Причина:** Устаревшие/одноразовые утилиты
+**Детали:**
+- PhysicsBalanceValidator — хардкод значений, не соответствующих VehicleConfig
+- MeshSaver — процедурные меши уже сохранены как ассеты
+- SceneCreator — сцены уже созданы
+
+---
+
+## 2026-01-29 - VehicleConfig: единый конфиг транспорта
+
+**Файлы:**
+
+### Создано
+- `Assets/Code/Configs/VehicleConfig.cs` - ScriptableObject с параметрами транспорта (масса, скорость, ускорение)
+- `Assets/Code/Gameplay/Features/Hero/VehicleStats.cs` - immutable struct с применёнными множителями
+
+### Изменено
+- `Assets/Code/Configs/LevelConfig.cs` - добавлено поле VehicleConfig
+- `Assets/Code/Gameplay/Features/Hero/HeroFeature.cs` - HeroFactory принимает VehicleStats
+- `Assets/Code/Gameplay/Features/Physics/PhysicsFeature.cs` - CalculatePhysicsVelocitySystem использует ECS компоненты
+- `Assets/Code/Infrastructure/Bootstrap/EcsBootstrap.cs` - создаёт VehicleStats с множителями
+- `Assets/Code/Infrastructure/Installers/GameplaySceneInstaller.cs` - биндинги VehicleConfig
+- `Assets/Code/Infrastructure/View/EntityBehaviour.cs` - конфигурирует Rigidbody из VehicleConfig
+- `Assets/Code/Meta/UpgradeSystem.cs` - добавлены GetSpeedMultiplier/GetLateralMultiplier
+
+### Удалено
+- `Assets/Code/Gameplay/Features/Hero/HeroSettings.cs` - legacy, дублировал настройки
+- `Assets/Code/Art/VFX/VehicleEffects.cs` - неиспользуемый компонент
+- `Assets/Code/Debug/DebugPhysicsUI.cs` - зависел от удалённого RunnerMovementSettings
+- `Assets/Code/Editor/RunnerMovementSettingsEditor.cs` - legacy editor
+
+**Причина:** Устранение дублирования настроек транспорта. Раньше настройки были в 3 местах.
+**Детали:**
+- VehicleConfig содержит базовые значения из ScriptableObject
+- VehicleStats создаётся в EcsBootstrap с применёнными множителями (апгрейды, сложность)
+- RunnerMovementSettings и IHeroSpawnPoint полностью удалены
+- Границы дороги теперь физические объекты (centerX=0)
+- PedestrianSpawnSystem больше не зависит от IHeroSpawnPoint
+- Удалена папка Assets/Code/Debug/ (DebugService, DebugPhysicsController, DebugPhysicsVisualizer, DebugPhysicsUI)
+- Удалены ссылки на debug классы из EconomyFeature и PhysicsCollisionHandler
+
+---
+
 ## 2026-01-29 - Завершение миграции на модульные конфиги
 
 **Файлы:**

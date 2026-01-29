@@ -1080,7 +1080,6 @@ GameObject:
   - component: {fileID: 6244744108132433294}
   - component: {fileID: 3100951380779720057}
   - component: {fileID: 227733861563055921}
-  - component: {fileID: 2110476914645058187}
   m_Layer: 8
   m_Name: PlayerTruck
   m_TagString: Untagged
@@ -1176,28 +1175,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 1
---- !u!114 &2110476914645058187
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6950217720130704864}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3e8d7fe80d98f354db3b6e7759d02ab5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Code.Art.VFX.VehicleEffects
-  _enableDust: 1
-  _dustParticles: {fileID: 0}
-  _dustSpeedThreshold: 2
-  _dustEmissionRate: 20
-  _enableTrail: 0
-  _leftTrail: {fileID: 0}
-  _rightTrail: {fileID: 0}
-  _enableSpeedLines: 1
-  _speedLines: {fileID: 0}
-  _speedLinesThreshold: 8
 --- !u!1 &7912889568657488408
 GameObject:
   m_ObjectHideFlags: 0

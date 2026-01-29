@@ -1,4 +1,4 @@
-using Code.Gameplay.Features.Hero;
+using Code.Configs;
 using UnityEngine;
 using Zenject;
 
@@ -15,19 +15,19 @@ namespace Code.Infrastructure.View
   {
     private GameEntity _entity;
     private Rigidbody _rigidbody;
-    private RunnerMovementSettings _movementSettings;
+    private VehicleConfig _vehicleConfig;
 
     public GameEntity Entity => _entity;
     public Rigidbody Rigidbody => _rigidbody;
 
     /// <summary>
-    /// Optional: Inject settings for Rigidbody configuration
+    /// Optional: Inject VehicleConfig for Rigidbody configuration
     /// </summary>
     [Inject]
-    public void Construct(RunnerMovementSettings movementSettings = null)
+    public void Construct(VehicleConfig vehicleConfig = null)
     {
-      _movementSettings = movementSettings;
-      Debug.Log($"[EntityBehaviour] Construct called, settings: {(_movementSettings != null ? "OK" : "NULL")}");
+      _vehicleConfig = vehicleConfig;
+      Debug.Log($"[EntityBehaviour] Construct called, config: {(_vehicleConfig != null ? _vehicleConfig.VehicleId : "NULL")}");
     }
 
     public void SetEntity(GameEntity entity)
@@ -70,11 +70,11 @@ namespace Code.Infrastructure.View
         Debug.Log("[EntityBehaviour] No Rigidbody found, creating...");
         _rigidbody = CreateRigidbody();
       }
-      else if (_movementSettings != null)
+      else if (_vehicleConfig != null)
       {
-        // Configure existing Rigidbody with injected settings
-        Debug.Log("[EntityBehaviour] Configuring existing Rigidbody with settings");
-        HeroRigidbodySetup.ConfigureRigidbody(_rigidbody, _movementSettings);
+        // Configure existing Rigidbody with VehicleConfig
+        Debug.Log("[EntityBehaviour] Configuring existing Rigidbody with VehicleConfig");
+        ConfigureRigidbodyFromConfig(_rigidbody, _vehicleConfig);
       }
       else
       {
@@ -141,10 +141,10 @@ namespace Code.Infrastructure.View
       // Create Rigidbody
       Rigidbody rb = gameObject.AddComponent<Rigidbody>();
 
-      if (_movementSettings != null)
+      if (_vehicleConfig != null)
       {
-        // Use injected settings
-        HeroRigidbodySetup.ConfigureRigidbody(rb, _movementSettings);
+        // Use VehicleConfig
+        ConfigureRigidbodyFromConfig(rb, _vehicleConfig);
       }
       else
       {
@@ -154,6 +154,29 @@ namespace Code.Infrastructure.View
 
       Debug.Log("[EntityBehaviour] Created new Rigidbody");
       return rb;
+    }
+
+    /// <summary>
+    /// Configure Rigidbody from VehicleConfig
+    /// </summary>
+    private void ConfigureRigidbodyFromConfig(Rigidbody rb, VehicleConfig config)
+    {
+      rb.mass = config.Mass;
+      rb.linearDamping = 0f;
+      rb.angularDamping = config.AngularDrag;
+      rb.useGravity = config.UseGravity;
+      rb.isKinematic = false;
+      rb.interpolation = RigidbodyInterpolation.Interpolate;
+      rb.collisionDetectionMode = config.UseContinuousCollision
+        ? CollisionDetectionMode.Continuous
+        : CollisionDetectionMode.Discrete;
+
+      // Freeze X/Z rotation only (allow Y movement for ramps)
+      rb.constraints =
+        RigidbodyConstraints.FreezeRotationX |
+        RigidbodyConstraints.FreezeRotationZ;
+
+      Debug.Log($"[EntityBehaviour] Rigidbody configured from VehicleConfig: mass={config.Mass}, angularDrag={config.AngularDrag}");
     }
 
     /// <summary>

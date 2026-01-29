@@ -24,9 +24,6 @@ namespace Code.Gameplay.Features.Surface
     [SerializeField] private ParticleSystem _enterEffect;
     [SerializeField] private ParticleSystem _continuousEffect;
 
-    [Header("Debug")]
-    [SerializeField] private bool _showDebugLogs = false;
-
     public SurfaceType SurfaceType => _surfaceType;
     public float FrictionMultiplier => _frictionMultiplier;
     public float DragMultiplier => _dragMultiplier;

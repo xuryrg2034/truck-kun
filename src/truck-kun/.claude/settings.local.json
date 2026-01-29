@@ -18,7 +18,8 @@
       "Bash(git add:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd physics system redesign document\n\nDesign for full physics pedestrians and road obstacles.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nImplement physics system redesign for pedestrians and obstacles\n\n- Add PedestrianPhysicsSettings with mass per pedestrian type\n- Update PedestrianFactory to use dynamic Rigidbody \\(not kinematic\\)\n- Create PedestrianForceMovementSystem for force-based crossing movement\n- Update CollisionSettings with knockback parameters \\(ForceMultiplier, LiftMultiplier\\)\n- Refactor PhysicsCollisionHandler with new knockback formula\n- Simplify RagdollFeature \\(force now applied by collision handler\\)\n- Add ObstacleComponents and ObstacleFeature for road obstacles\n- Add documentation for Collision Layers and Obstacle Prefabs setup\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(ls -la \"C:\\\\Projects\\\\home\\\\unity\\\\Truck-kun\\\\src\\\\truck-kun\\\\Assets\\\\Code\\\\Editor\"\" 2>/dev/null || echo \"Folder empty or not found \")"
     ]
   }
 }

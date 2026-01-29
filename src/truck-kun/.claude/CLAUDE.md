@@ -15,6 +15,8 @@
 | Цель | Файл |
 |------|------|
 | Конфигурация уровня | `Assets/Code/Configs/LevelConfig.cs` |
+| Конфигурация транспорта | `Assets/Code/Configs/VehicleConfig.cs` |
+| Runtime статы транспорта | `Assets/Code/Gameplay/Features/Hero/VehicleStats.cs` |
 | Точка входа ECS | `Assets/Code/Infrastructure/Bootstrap/EcsBootstrap.cs` |
 | Порядок систем | `Assets/Code/Gameplay/BattleFeature.cs` |
 | NPC логика | `Assets/Code/Gameplay/Features/Pedestrian/PedestrianFeature.cs` |

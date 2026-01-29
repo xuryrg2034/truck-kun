@@ -76,15 +76,6 @@ namespace Code.Infrastructure.View
       // Play hit VFX (particles + camera shake)
       HitEffectController.Instance?.PlayHitEffect(impactPoint, impactNormal, impactSpeed);
 
-      // Notify debug visualizer
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-      if (Code.Debugging.DebugPhysicsController.Instance?.Visualizer != null)
-      {
-        Code.Debugging.DebugPhysicsController.Instance.Visualizer.RegisterCollision(
-          impactPoint, impactSpeed, pedestrianEntity.pedestrianType.Value.ToString());
-      }
-#endif
-
       Debug.Log($"<color=red>[COLLISION]</color> Hit {pedestrianEntity.pedestrianType.Value} " +
                 $"at velocity {impactSpeed:F1} m/s (id: {pedestrianEntity.id.Value})");
     }

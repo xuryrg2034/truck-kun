@@ -19,13 +19,6 @@ namespace Code.Gameplay.Features.Obstacle
     [Tooltip("Duration of launch state (prevents velocity override)")]
     [SerializeField] private float _launchDuration = 1.0f;
 
-    [Header("Effects")]
-    [Tooltip("Play sound on boost")]
-    [SerializeField] private bool _playSound = true;
-
-    [Tooltip("Show particles on boost")]
-    [SerializeField] private bool _showParticles = true;
-
     public float ForwardBoost => _forwardBoost;
     public float UpwardBoost => _upwardBoost;
     public float LaunchDuration => _launchDuration;

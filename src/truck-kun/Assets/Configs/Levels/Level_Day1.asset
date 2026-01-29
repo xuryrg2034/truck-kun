@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Code.Configs.LevelConfig
   LevelId: day_1
   LevelName: Level_1
+  Vehicle: {fileID: 11400000, guid: 4fe26f17198268d4e8ba4a37bca5288e, type: 2}
   Economy: {fileID: 11400000, guid: 6e3f90e2af7b74b42a32e632b7b02fcd, type: 2}
   Feedback: {fileID: 11400000, guid: 6cc9c0dd12a3a094ea978fc065a3fc28, type: 2}
   Day: {fileID: 11400000, guid: 07e2c739105daf24aa075f28a465cd78, type: 2}

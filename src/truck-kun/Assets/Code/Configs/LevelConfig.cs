@@ -11,6 +11,9 @@ namespace Code.Configs
         public string LevelId;
         public string LevelName;
 
+        [Header("Vehicle")]
+        public VehicleConfig Vehicle;
+
         [Header("Global Configs")]
         public EconomyConfig Economy;
         public FeedbackConfig Feedback;
