@@ -17,11 +17,20 @@ MonoBehaviour:
     Kind: 0
     Color: {r: 0.95, g: 0.95, b: 1, a: 1}
     Scale: 0.85
-    Speed: 2
-    ForwardTilt: 0
+    Speed: 1
+    ForwardTilt: 15
     BaseSpeed: 2
     Category: 0
     DisplayName: Student
+  - Prefab: {fileID: 5756689042150815301, guid: e1774317e0eed2e4288d0e8f88df53dc, type: 3}
+    Kind: 1
+    Color: {r: 0.4, g: 0.4, b: 0.45, a: 1}
+    Scale: 1
+    Speed: 1
+    ForwardTilt: 0
+    BaseSpeed: 1.8
+    Category: 0
+    DisplayName: Salaryman
   _spawnWeights:
   - Kind: 0
     Weight: 0.25
