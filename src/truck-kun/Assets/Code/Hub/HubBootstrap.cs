@@ -1,4 +1,4 @@
-using Code.Gameplay.Features.Economy;
+using Code.Gameplay.Features.Economy.Services;
 using Code.Infrastructure;
 using Code.Meta.Economy;
 using Code.Meta.Upgrades;

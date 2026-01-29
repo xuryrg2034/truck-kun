@@ -19,6 +19,150 @@
 
 ---
 
+## 2026-01-29 - Рефакторинг всех Features (ECS-структура)
+
+**Завершён полный рефакторинг Gameplay Features по стандартной ECS-структуре.**
+
+### Surface (368 → 26 строк Feature)
+```
+Features/Surface/
+├── Data/SurfaceSpawnSettings.cs
+├── Factory/SurfaceFactory.cs
+├── Systems/SurfaceSpawnSystem.cs
+└── SurfaceFeature.cs
+```
+
+### Feedback (362 → 14 строк Feature)
+```
+Features/Feedback/
+├── Services/
+│   ├── HitEffectService.cs
+│   └── FloatingTextService.cs
+├── Systems/
+│   ├── HitFeedbackSystem.cs
+│   └── FloatingTextUpdateSystem.cs
+└── FeedbackFeature.cs
+```
+
+### Quest (322 → 16 строк Feature)
+```
+Features/Quest/
+├── Components/QuestComponents.cs
+├── Services/QuestService.cs
+├── Systems/QuestSystems.cs
+└── QuestFeature.cs
+```
+
+### Collision (264 → 15 строк Feature)
+```
+Features/Collision/
+├── Components/CollisionComponents.cs
+├── Data/CollisionSettings.cs
+├── Systems/CollisionSystems.cs
+└── CollisionFeature.cs
+```
+
+### Economy (241 → 15 строк Feature)
+```
+Features/Economy/
+├── Components/EconomyComponents.cs
+├── Services/MoneyService.cs
+├── Systems/EconomySystems.cs
+└── EconomyFeature.cs
+```
+
+**Причина:** Приведение к стандартной ECS-структуре
+**Детали:**
+- Обновлён GameplaySceneInstaller с новыми namespaces
+- Сервисы вынесены в подпапки Services/
+- Компоненты в Components/, системы в Systems/
+
+---
+
+## 2026-01-29 - Рефакторинг PedestrianFeature (ECS-структура)
+
+**Файлы:**
+
+### Структура до:
+```
+Features/Pedestrian/
+├── PedestrianFeature.cs   (751 строк - всё в одном файле)
+├── PedestrianSettings.cs
+├── PedestrianPhysicsSettings.cs
+└── Systems/
+    └── PedestrianForceMovementSystem.cs
+```
+
+### Структура после:
+```
+Features/Pedestrian/
+├── Components/
+│   └── PedestrianComponents.cs
+├── Data/
+│   ├── PedestrianEnums.cs
+│   └── PedestrianVisualData.cs
+├── Factory/
+│   └── PedestrianFactory.cs
+├── Systems/
+│   ├── PedestrianSpawnSystem.cs
+│   ├── PedestrianCrossingSystem.cs
+│   ├── PedestrianDespawnSystem.cs
+│   └── PedestrianForceMovementSystem.cs
+├── Extensions/
+│   └── PedestrianKindExtensions.cs
+├── PedestrianFeature.cs   (28 строк)
+├── PedestrianSettings.cs
+└── PedestrianPhysicsSettings.cs
+
+Configs/Pedestrian/
+└── PedestrianConfig.cs    (перемещён из Feature)
+```
+
+**Причина:** Приведение к стандартной ECS-структуре
+**Детали:**
+- PedestrianConfig перемещён в Configs/Pedestrian/ (namespace: Code.Configs.Pedestrian)
+- Обновлён GameplaySceneInstaller с новыми usings
+- PedestrianCrossingSystem оставлен (не используется, но может понадобиться)
+
+---
+
+## 2026-01-29 - Рефакторинг PhysicsFeature (ECS-структура)
+
+**Файлы:**
+
+### Структура до:
+```
+Features/Physics/
+├── PhysicsFeature.cs      (725 строк - Feature + 8 систем + helper)
+└── PhysicsComponents.cs
+```
+
+### Структура после:
+```
+Features/Physics/
+├── Components/
+│   └── PhysicsComponents.cs
+├── Systems/
+│   ├── ReadInputForPhysicsSystem.cs
+│   ├── CalculatePhysicsVelocitySystem.cs
+│   ├── ApplySurfaceModifiersSystem.cs
+│   ├── ClampPhysicsVelocitySystem.cs
+│   ├── ApplyPhysicsVelocitySystem.cs
+│   ├── SyncPhysicsPositionSystem.cs
+│   └── UpdatePhysicsStateSystem.cs
+├── PhysicsFeature.cs      (52 строки - только Feature)
+└── SurfaceZoneHandler.cs
+```
+
+**Причина:** Приведение к стандартной ECS-структуре (каждая система — отдельный файл)
+**Детали:**
+- Удалён DebugPhysicsEntitiesSystem (debug код)
+- Удалены Debug.Log вызовы из систем
+- PhysicsFeature теперь содержит только композицию систем
+- Namespace остался `Code.Gameplay.Features.Physics` для совместимости
+
+---
+
 ## 2026-01-29 - Очистка Editor скриптов
 
 **Файлы:**

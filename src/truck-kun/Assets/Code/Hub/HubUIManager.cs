@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Code.Gameplay.Features.Economy;
+using Code.Gameplay.Features.Economy.Services;
 using Code.Meta.Upgrades;
 using UnityEngine;
 using UnityEngine.SceneManagement;

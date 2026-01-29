@@ -1,7 +1,9 @@
 using System.Collections.Generic;
-using Code.Gameplay.Features.Economy;
+using Code.Gameplay.Features.Economy.Services;
 using Code.Gameplay.Features.Pedestrian;
+using Code.Gameplay.Features.Pedestrian.Extensions;
 using Code.Gameplay.Features.Quest;
+using Code.Gameplay.Features.Quest.Services;
 using Code.Infrastructure;
 using Entitas;
 using UnityEngine;

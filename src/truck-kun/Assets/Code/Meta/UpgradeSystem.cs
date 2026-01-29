@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Code.Gameplay.Features.Economy;
+using Code.Gameplay.Features.Economy.Services;
 using Entitas;
 using Entitas.CodeGeneration.Attributes;
 using UnityEngine;

@@ -1,4 +1,5 @@
 using Code.Gameplay.Features.Pedestrian;
+using Code.Gameplay.Features.Pedestrian.Extensions;
 using UnityEngine;
 using UnityEngine.UI;
 

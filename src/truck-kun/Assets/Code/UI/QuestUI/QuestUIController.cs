@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Code.Gameplay.Features.Pedestrian;
+using Code.Gameplay.Features.Pedestrian.Extensions;
 using Code.Gameplay.Features.Quest;
 using Entitas;
 using UnityEngine;

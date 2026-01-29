@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using Code.Configs.Pedestrian;
 using Code.Gameplay.Features.Pedestrian;
 using UnityEditor;
 using UnityEngine;
