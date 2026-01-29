@@ -19,6 +19,33 @@
 
 ---
 
+## 2026-01-29 - Улучшение системы спавна пешеходов
+
+**Файлы:**
+- `Configs/Spawning/PedestrianSpawnConfig.cs` - новые параметры спавна
+- `Gameplay/Features/Pedestrian/Systems/PedestrianSpawnSystem.cs` - рефакторинг логики
+
+**Причина:** Пешеходы спавнились на высоте Y героя (баг при прыжках трака)
+
+**Исправления:**
+1. **Фиксированный Y** — `SpawnY = 0f`, пешеходы всегда на земле
+2. **Вариативность Z** — `MinSpawnDistanceAhead + SpawnZVariation` вместо фиксированного расстояния
+3. **Проверка препятствий** — `CheckOverlap` с Physics.CheckSphere перед спавном
+4. **Несколько попыток** — `MaxSpawnAttempts` при неудачном спавне
+
+**Новые параметры в PedestrianSpawnConfig:**
+```csharp
+float SpawnY = 0f;              // Высота спавна
+float MinSpawnDistanceAhead = 25f;
+float SpawnZVariation = 10f;    // Разброс по Z
+bool CheckOverlap = true;       // Проверка коллизий
+float OverlapRadius = 0.5f;
+LayerMask ObstacleLayer;
+int MaxSpawnAttempts = 3;
+```
+
+---
+
 ## 2026-01-29 - Миграция документации в Obsidian
 
 **Создан Obsidian vault для графовой документации проекта.**

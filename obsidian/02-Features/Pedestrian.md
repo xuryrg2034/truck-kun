@@ -12,9 +12,21 @@ NPC пешеходы — цели для столкновений.
 
 | Система | Назначение |
 |---------|------------|
-| PedestrianSpawnSystem | Спавн пешеходов |
-| PedestrianMovementSystem | Движение по тротуару |
-| PedestrianCleanupSystem | Удаление за границей |
+| PedestrianSpawnSystem | Спавн пешеходов (Y=0, overlap check) |
+| PedestrianCrossingSystem | Движение пересекающих дорогу |
+| PedestrianDespawnSystem | Удаление за границей |
+
+## Спавн
+
+Параметры в `PedestrianSpawnConfig`:
+
+| Параметр | Описание |
+|----------|----------|
+| SpawnY | Фиксированная высота (0 = земля) |
+| MinSpawnDistanceAhead | Мин. расстояние перед игроком |
+| SpawnZVariation | Разброс по Z |
+| CheckOverlap | Проверка препятствий |
+| ObstacleLayer | Слой для проверки |
 
 ## Компоненты
 

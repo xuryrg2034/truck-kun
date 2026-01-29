@@ -33,10 +33,17 @@ namespace Code.Configs.Spawning
         [Tooltip("Distance behind player when pedestrian despawns")]
         public float DespawnDistance = 25f;
 
-        [Header("Road Bounds")]
-        [Tooltip("Distance ahead of player to spawn pedestrians")]
-        public float SpawnDistanceAhead = 20f;
+        [Header("Spawn Position")]
+        [Tooltip("Fixed Y position for spawning (ground level)")]
+        public float SpawnY = 0f;
 
+        [Tooltip("Minimum distance ahead of player to spawn")]
+        public float MinSpawnDistanceAhead = 25f;
+
+        [Tooltip("Random Z variation added to min distance")]
+        public float SpawnZVariation = 10f;
+
+        [Header("Road Bounds")]
         [Tooltip("Total road width for spawning")]
         public float RoadWidth = 8f;
 
@@ -45,6 +52,19 @@ namespace Code.Configs.Spawning
 
         [Tooltip("Margin from road edges for regular spawning")]
         public float LateralMargin = 0.5f;
+
+        [Header("Spawn Validation")]
+        [Tooltip("Check for obstacles before spawning")]
+        public bool CheckOverlap = true;
+
+        [Tooltip("Radius for overlap check")]
+        public float OverlapRadius = 0.5f;
+
+        [Tooltip("Layer mask for obstacle detection")]
+        public LayerMask ObstacleLayer;
+
+        [Tooltip("Maximum attempts to find valid spawn position")]
+        public int MaxSpawnAttempts = 3;
 
         [Header("Spawn Pool")]
         public List<PedestrianSpawnEntry> SpawnPool = new();

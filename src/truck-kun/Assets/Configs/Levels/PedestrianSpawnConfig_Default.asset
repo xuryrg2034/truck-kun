@@ -20,8 +20,16 @@ MonoBehaviour:
   CrossingSpeedMultiplier: 1
   RotateToCrossingDirection: 1
   DespawnDistance: 25
-  SpawnDistanceAhead: 20
+  SpawnY: 0
+  MinSpawnDistanceAhead: 25
+  SpawnZVariation: 10
   RoadWidth: 8
   SidewalkOffset: 1.5
   LateralMargin: 0.5
+  CheckOverlap: 1
+  OverlapRadius: 0.5
+  ObstacleLayer:
+    serializedVersion: 2
+    m_Bits: 1280
+  MaxSpawnAttempts: 3
   SpawnPool: []
