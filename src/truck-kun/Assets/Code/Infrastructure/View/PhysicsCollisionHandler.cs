@@ -78,9 +78,9 @@ namespace Code.Infrastructure.View
 
       // Notify debug visualizer
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-      if (Code.DebugTools.DebugPhysicsController.Instance?.Visualizer != null)
+      if (Code.Debugging.DebugPhysicsController.Instance?.Visualizer != null)
       {
-        Code.DebugTools.DebugPhysicsController.Instance.Visualizer.RegisterCollision(
+        Code.Debugging.DebugPhysicsController.Instance.Visualizer.RegisterCollision(
           impactPoint, impactSpeed, pedestrianEntity.pedestrianType.Value.ToString());
       }
 #endif

@@ -224,7 +224,7 @@ namespace Code.Gameplay.Features.Economy
     {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
       // Skip penalties in God Mode
-      if (Code.DevTools.DebugService.GodModeEnabled)
+      if (Code.Debugging.DebugService.GodModeEnabled)
       {
         UnityEngine.Debug.Log("[Economy] Penalty skipped (God Mode)");
         return;

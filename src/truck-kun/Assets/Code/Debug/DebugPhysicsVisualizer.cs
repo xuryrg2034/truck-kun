@@ -3,7 +3,7 @@ using Code.Infrastructure.View;
 using Entitas;
 using UnityEngine;
 
-namespace Code.Debug
+namespace Code.Debugging
 {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
   /// <summary>

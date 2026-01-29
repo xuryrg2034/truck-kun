@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace Code.Debug
+namespace Code.Debugging
 {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
   /// <summary>
