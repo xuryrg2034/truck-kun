@@ -2,6 +2,9 @@ using Code.Art.VFX;
 using Code.Balance;
 using Code.Common.Extensions;
 using Code.Common.Services;
+using Code.Configs;
+using Code.Configs.Global;
+using Code.Configs.Spawning;
 using Code.Gameplay;
 using Code.Gameplay.Features.Collision;
 using Code.Gameplay.Features.Economy;
@@ -34,7 +37,11 @@ namespace Code.Infrastructure.Installers
     [SerializeField] private Transform _heroSpawn;
     [SerializeField] private EntityBehaviour _heroViewPrefab;
 
-    [Header("Balance")]
+    [Header("New Config System (optional)")]
+    [Tooltip("New modular config system. If assigned, will be used alongside legacy GameBalance")]
+    [SerializeField] private LevelConfig _levelConfig;
+
+    [Header("Legacy Balance (will be deprecated)")]
     [SerializeField] private GameBalance _gameBalance;
 
     [Header("Pedestrians")]
@@ -76,10 +83,13 @@ namespace Code.Infrastructure.Installers
         return;
       }
 
-      // Balance Provider
+      // Balance Provider (legacy)
       IBalanceProvider balanceProvider = new BalanceProvider(_gameBalance);
       Container.BindInstance(balanceProvider).AsSingle();
       Container.BindInstance(_gameBalance).AsSingle();
+
+      // New Config System (bind if assigned)
+      BindLevelConfig();
 
       // Difficulty Service
       DifficultyScalingSettings difficultySettings = _gameBalance.Difficulty.ToSettings();
@@ -300,6 +310,50 @@ namespace Code.Infrastructure.Installers
         HolePenaltyDuration = 1f
       };
       Container.BindInstance(obstacle).AsSingle();
+    }
+
+    /// <summary>
+    /// Bind new modular config system.
+    /// These configs can be used by new/migrated systems.
+    /// </summary>
+    private void BindLevelConfig()
+    {
+      if (_levelConfig == null)
+      {
+        Debug.Log("[GameplaySceneInstaller] LevelConfig not assigned, using legacy GameBalance only");
+        return;
+      }
+
+      Debug.Log($"[GameplaySceneInstaller] Binding LevelConfig: {_levelConfig.LevelId}");
+
+      // Bind the main LevelConfig
+      Container.BindInstance(_levelConfig).AsSingle();
+
+      // Bind global configs
+      if (_levelConfig.Economy != null)
+        Container.BindInstance(_levelConfig.Economy).AsSingle();
+
+      if (_levelConfig.Feedback != null)
+        Container.BindInstance(_levelConfig.Feedback).AsSingle();
+
+      // Bind level-specific configs
+      if (_levelConfig.Day != null)
+        Container.BindInstance(_levelConfig.Day).AsSingle();
+
+      if (_levelConfig.PedestrianSpawn != null)
+        Container.BindInstance(_levelConfig.PedestrianSpawn).AsSingle();
+
+      if (_levelConfig.QuestPool != null)
+        Container.BindInstance(_levelConfig.QuestPool).AsSingle();
+
+      // Bind optional spawner configs
+      if (_levelConfig.SurfaceSpawn != null)
+        Container.BindInstance(_levelConfig.SurfaceSpawn).AsSingle();
+
+      if (_levelConfig.ObstacleSpawn != null)
+        Container.BindInstance(_levelConfig.ObstacleSpawn).AsSingle();
+
+      Debug.Log("[GameplaySceneInstaller] New config system bound successfully");
     }
   }
 }
