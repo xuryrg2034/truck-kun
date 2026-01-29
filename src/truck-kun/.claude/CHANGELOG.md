@@ -19,6 +19,51 @@
 
 ---
 
+## 2026-01-29 - Миграция документации в Obsidian
+
+**Создан Obsidian vault для графовой документации проекта.**
+
+**Структура:**
+```
+C:\Projects\home\unity\Truck-kun\obsidian\
+├── 00-Index/
+│   ├── Home.md              # Главная навигация
+│   └── Claude-Instructions.md # Инструкции для AI
+├── 01-Architecture/
+│   ├── ECS-Pattern.md
+│   ├── Contexts.md
+│   └── View-Binding.md
+├── 02-Features/
+│   ├── Physics.md
+│   ├── Pedestrian.md
+│   ├── Collision.md
+│   ├── Economy.md
+│   ├── Quest.md
+│   ├── Feedback.md
+│   └── Surface.md
+├── 03-Services/
+│   ├── MoneyService.md
+│   ├── QuestService.md
+│   ├── HitEffectService.md
+│   └── UpgradeService.md
+├── 04-Game-Flow/
+│   ├── Game-Loop.md
+│   ├── Player-Progression.md
+│   └── Economy-Flow.md
+└── 05-Configs/
+    ├── VehicleConfig.md
+    ├── LevelConfig.md
+    └── PedestrianConfig.md
+```
+
+**Причина:** Визуализация архитектуры через граф связей Obsidian
+**Детали:**
+- Все заметки связаны через [[wikilinks]]
+- Инструкции для Claude по поддержке графа
+- CLAUDE.md обновлён с ссылкой на vault
+
+---
+
 ## 2026-01-29 - Рефакторинг всех Features (ECS-структура)
 
 **Завершён полный рефакторинг Gameplay Features по стандартной ECS-структуре.**

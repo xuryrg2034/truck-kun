@@ -17,8 +17,8 @@ MonoBehaviour:
   AngularDrag: 0.05
   UseGravity: 1
   UseContinuousCollision: 1
-  BaseForwardSpeed: 15
-  MinForwardSpeed: 9
+  BaseForwardSpeed: 5
+  MinForwardSpeed: 1
   MaxForwardSpeed: 24
   MaxLateralSpeed: 8
   ForwardAcceleration: 10

@@ -1078,8 +1078,9 @@ GameObject:
   m_Component:
   - component: {fileID: 1023653022435968196}
   - component: {fileID: 6244744108132433294}
-  - component: {fileID: 3100951380779720057}
   - component: {fileID: 227733861563055921}
+  - component: {fileID: 3100951380779720057}
+  - component: {fileID: 22650685200253909}
   m_Layer: 8
   m_Name: PlayerTruck
   m_TagString: Untagged
@@ -1136,18 +1137,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1.8, y: 1.6, z: 4.5}
   m_Center: {x: 0, y: 0.8, z: 0.2}
---- !u!114 &3100951380779720057
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6950217720130704864}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e5f60718293a4b5c6d7e8f9012345678, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Code.Infrastructure.View.EntityBehaviour
 --- !u!54 &227733861563055921
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1175,6 +1164,30 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 1
+--- !u!114 &3100951380779720057
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6950217720130704864}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5f60718293a4b5c6d7e8f9012345678, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Code.Infrastructure.View.EntityBehaviour
+--- !u!114 &22650685200253909
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6950217720130704864}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: afd90bdeb193d854386f5f594e7ce285, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Code.Infrastructure.View.PhysicsCollisionHandler
 --- !u!1 &7912889568657488408
 GameObject:
   m_ObjectHideFlags: 0
