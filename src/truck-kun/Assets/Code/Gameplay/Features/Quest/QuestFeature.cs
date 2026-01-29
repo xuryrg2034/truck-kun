@@ -1,12 +1,16 @@
 using System;
 using System.Collections.Generic;
 using Code.Common.Services;
+using Code.Configs.Spawning;
 using Code.Gameplay.Features.Pedestrian;
 using Code.Infrastructure.Systems;
 using Entitas;
 using Entitas.CodeGeneration.Attributes;
 using UnityEngine;
 using Zenject;
+
+// Note: QuestPoolConfig in Code.Configs.Spawning is the new config
+// QuestConfig here is legacy and kept for backward compatibility
 
 namespace Code.Gameplay.Features.Quest
 {
@@ -137,17 +141,26 @@ namespace Code.Gameplay.Features.Quest
   public class QuestService : IQuestService
   {
     private readonly MetaContext _meta;
-    private readonly QuestConfig _config;
+    private readonly QuestConfig _legacyConfig;
+    private readonly QuestPoolConfig _newConfig;
     private readonly IIdentifierService _identifiers;
     private readonly IGroup<MetaEntity> _activeQuests;
     private readonly List<MetaEntity> _questBuffer = new(8);
 
-    public QuestService(MetaContext meta, IIdentifierService identifiers, [InjectOptional] QuestConfig config = null)
+    public QuestService(
+      MetaContext meta,
+      IIdentifierService identifiers,
+      [InjectOptional] QuestConfig legacyConfig = null,
+      [InjectOptional] QuestPoolConfig newConfig = null)
     {
       _meta = meta;
-      _config = config;
+      _legacyConfig = legacyConfig;
+      _newConfig = newConfig;
       _identifiers = identifiers;
       _activeQuests = meta.GetGroup(MetaMatcher.AllOf(MetaMatcher.DailyQuest, MetaMatcher.ActiveQuest));
+
+      if (_newConfig != null)
+        Debug.Log("[QuestService] Using new QuestPoolConfig");
     }
 
     public bool HasActiveQuests => _activeQuests.count > 0;
@@ -173,25 +186,44 @@ namespace Code.Gameplay.Features.Quest
     {
       ClearExistingQuests();
 
-      // Available non-protected types for quests
+      // Available non-protected types for quests (default fallback)
       PedestrianKind[] availableTypes = {
         PedestrianKind.StudentNerd,
         PedestrianKind.Salaryman,
         PedestrianKind.Teenager
       };
 
+      // Use new config if available
+      if (_newConfig != null && _newConfig.AvailableQuests.Count > 0)
+      {
+        List<Configs.Spawning.QuestDefinition> generatedQuests = _newConfig.GenerateQuestsForDay();
+        foreach (var def in generatedQuests)
+        {
+          int targetCount = def.GetRandomTarget();
+          int reward = def.CalculateReward(targetCount, targetCount);
+
+          MetaEntity quest = _meta.CreateEntity();
+          quest.AddId(_identifiers.Next());
+          quest.AddDailyQuest(def.TargetKind, targetCount, reward);
+          quest.AddQuestProgress(0);
+          quest.isActiveQuest = true;
+        }
+        return;
+      }
+
+      // Legacy config or default behavior
       for (int i = 0; i < count; i++)
       {
         PedestrianKind targetType;
         int targetCount;
         int reward;
 
-        if (_config != null && _config.AvailableQuests.Count > 0)
+        if (_legacyConfig != null && _legacyConfig.AvailableQuests.Count > 0)
         {
-          QuestDefinition definition = _config.GetRandomQuest();
+          QuestDefinition definition = _legacyConfig.GetRandomQuest();
           targetType = definition.TargetType;
           targetCount = UnityEngine.Random.Range(definition.MinCount, definition.MaxCount + 1);
-          reward = definition.BaseReward + targetCount * _config.RewardPerTarget;
+          reward = definition.BaseReward + targetCount * _legacyConfig.RewardPerTarget;
         }
         else
         {

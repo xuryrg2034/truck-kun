@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Code.Common.Components;
+using Code.Configs.Global;
 using Code.Gameplay.Features.Quest;
 using Code.Infrastructure.Systems;
 using Code.Meta.Upgrades;
@@ -8,6 +9,8 @@ using Entitas;
 using Entitas.CodeGeneration.Attributes;
 using UnityEngine;
 using Zenject;
+
+// Note: EconomyConfig moved to Code.Configs.Global.EconomyConfig
 
 namespace Code.Gameplay.Features.Economy
 {
@@ -33,7 +36,7 @@ namespace Code.Gameplay.Features.Economy
 
   #endregion
 
-  #region Settings
+  #region Legacy Settings (kept for backward compatibility)
 
   [Serializable]
   public class EconomySettings
@@ -43,17 +46,7 @@ namespace Code.Gameplay.Features.Economy
     public int BaseQuestReward = 50;
   }
 
-  [CreateAssetMenu(fileName = "EconomyConfig", menuName = "Truck-kun/Economy Config")]
-  public class EconomyConfig : ScriptableObject
-  {
-    [SerializeField] private int _startingMoney = 1000;
-    [SerializeField] private int _violationPenalty = 100;
-    [SerializeField] private int _baseQuestReward = 50;
-
-    public int StartingMoney => _startingMoney;
-    public int ViolationPenalty => _violationPenalty;
-    public int BaseQuestReward => _baseQuestReward;
-  }
+  // Note: EconomyConfig ScriptableObject moved to Code.Configs.Global.EconomyConfig
 
   #endregion
 
@@ -76,17 +69,26 @@ namespace Code.Gameplay.Features.Economy
   public class MoneyService : IMoneyService
   {
     private readonly MetaContext _meta;
-    private readonly EconomySettings _settings;
+    private readonly EconomySettings _legacySettings;
+    private readonly EconomyConfig _newConfig;
     private readonly IUpgradeService _upgradeService;
+
+    // Properties to get values from new config or fall back to legacy
+    private int StartingMoney => _newConfig != null ? _newConfig.StartingMoney : _legacySettings?.StartingMoney ?? 1000;
 
     public MoneyService(
       MetaContext meta,
       [InjectOptional] EconomySettings settings = null,
+      [InjectOptional] EconomyConfig newConfig = null,
       [InjectOptional] IUpgradeService upgradeService = null)
     {
       _meta = meta;
-      _settings = settings ?? new EconomySettings();
+      _legacySettings = settings ?? new EconomySettings();
+      _newConfig = newConfig;
       _upgradeService = upgradeService;
+
+      if (_newConfig != null)
+        Debug.Log("[MoneyService] Using new EconomyConfig");
     }
 
     public int Balance => _meta.hasPlayerMoney ? _meta.playerMoney.Amount : 0;
@@ -99,7 +101,7 @@ namespace Code.Gameplay.Features.Economy
       {
         // Load saved balance from PlayerPrefs, or use starting money
         int savedBalance = PlayerPrefs.GetInt("PlayerBalance", -1);
-        int initialMoney = savedBalance >= 0 ? savedBalance : _settings.StartingMoney;
+        int initialMoney = savedBalance >= 0 ? savedBalance : StartingMoney;
         _meta.SetPlayerMoney(initialMoney);
       }
 
@@ -199,15 +201,22 @@ namespace Code.Gameplay.Features.Economy
   public class ProcessViolationPenaltiesSystem : ReactiveSystem<GameEntity>
   {
     private readonly IMoneyService _moneyService;
-    private readonly EconomySettings _settings;
+    private readonly EconomySettings _legacySettings;
+    private readonly EconomyConfig _newConfig;
+
+    private int ViolationPenalty => _newConfig != null
+      ? _newConfig.ViolationPenalty
+      : _legacySettings?.ViolationPenalty ?? 100;
 
     public ProcessViolationPenaltiesSystem(
       GameContext game,
       IMoneyService moneyService,
-      [InjectOptional] EconomySettings settings = null) : base(game)
+      [InjectOptional] EconomySettings settings = null,
+      [InjectOptional] EconomyConfig newConfig = null) : base(game)
     {
       _moneyService = moneyService;
-      _settings = settings ?? new EconomySettings();
+      _legacySettings = settings ?? new EconomySettings();
+      _newConfig = newConfig;
     }
 
     protected override ICollector<GameEntity> GetTrigger(IContext<GameEntity> context)
@@ -233,7 +242,7 @@ namespace Code.Gameplay.Features.Economy
 
       foreach (GameEntity violation in entities)
       {
-        _moneyService.ApplyPenalty(_settings.ViolationPenalty);
+        _moneyService.ApplyPenalty(ViolationPenalty);
       }
     }
   }
