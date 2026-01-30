@@ -10,9 +10,9 @@ related: [[MoneyService]], [[Collision]]
 
 ## Системы
 
-| Система | Назначение |
-|---------|------------|
-| MoneyCollectionSystem | Сбор денег |
+| Система                 | Назначение     |
+| ----------------------- | -------------- |
+| MoneyCollectionSystem   | Сбор денег     |
 | RewardCalculationSystem | Расчёт награды |
 
 ## Компоненты
